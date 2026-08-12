@@ -6,6 +6,7 @@ import { apiClient } from "../../api/client";
 import type { PagedResult } from "../../types/common";
 import type { Lead } from "../../types/lead";
 import type { Unit } from "../../types/unit";
+import { formatCurrency } from "../../utils/format";
 
 export const dealSchema = z.object({
   leadId: z.string().min(1, "Lead is required"),
@@ -64,7 +65,7 @@ export function DealForm({ onSubmit }: DealFormProps) {
           <option value="">Select a unit…</option>
           {units?.map((unit) => (
             <option key={unit.id} value={unit.id}>
-              {unit.unitCode} — {unit.price}
+              {unit.unitCode} — ${formatCurrency(unit.price)}
             </option>
           ))}
         </select>

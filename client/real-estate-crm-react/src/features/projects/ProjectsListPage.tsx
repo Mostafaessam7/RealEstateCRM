@@ -10,6 +10,7 @@ import { ProjectForm, type ProjectFormValues } from "./ProjectForm";
 import { useCreateProject, useDeleteProject, useProjects, useUpdateProject } from "./projectsApi";
 import type { Project, ProjectListQuery, ProjectStatus } from "../../types/project";
 import { getApiErrorMessage } from "../../api/client";
+import { formatCurrency } from "../../utils/format";
 
 export function ProjectsListPage() {
   const [query, setQuery] = useState<ProjectListQuery>({ page: 1, pageSize: 20 });
@@ -111,7 +112,7 @@ export function ProjectsListPage() {
                   <td>{project.name}</td>
                   <td>{project.developer ?? "—"}</td>
                   <td>{project.location ?? "—"}</td>
-                  <td>{project.startingPrice ?? "—"}</td>
+                  <td>{project.startingPrice != null ? `$${formatCurrency(project.startingPrice)}` : "—"}</td>
                   <td>
                     <StatusBadge status={project.status} />
                   </td>

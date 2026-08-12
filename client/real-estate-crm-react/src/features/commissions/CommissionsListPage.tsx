@@ -9,6 +9,7 @@ import { CommissionForm, type CommissionFormValues } from "./CommissionForm";
 import { useCancelCommission, useCreateCommission, useCommissions, useMarkCommissionPaid } from "./commissionsApi";
 import { CommissionStatus, type CommissionListQuery } from "../../types/commission";
 import { getApiErrorMessage } from "../../api/client";
+import { formatCurrency } from "../../utils/format";
 
 export function CommissionsListPage() {
   const [query, setQuery] = useState<CommissionListQuery>({ page: 1, pageSize: 20 });
@@ -66,9 +67,9 @@ export function CommissionsListPage() {
               {data?.items.map((commission) => (
                 <tr key={commission.id}>
                   <td>
-                    {commission.commissionAmount} ({commission.commissionPercentage}%)
+                    {formatCurrency(commission.commissionAmount)} ({commission.commissionPercentage}%)
                   </td>
-                  <td>{commission.companyCommission}</td>
+                  <td>{formatCurrency(commission.companyCommission)}</td>
                   <td>
                     <StatusBadge status={commission.status} />
                   </td>

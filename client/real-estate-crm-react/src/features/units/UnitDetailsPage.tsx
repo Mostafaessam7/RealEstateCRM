@@ -3,6 +3,7 @@ import { PageHeader } from "../../components/PageHeader";
 import { AsyncState } from "../../components/AsyncState";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useUnit } from "./unitsApi";
+import { formatCurrency } from "../../utils/format";
 
 export function UnitDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +19,7 @@ export function UnitDetailsPage() {
               <strong>Status:</strong> <StatusBadge status={unit.status} />
             </p>
             <p>
-              <strong>Price:</strong> {unit.price}
+              <strong>Price:</strong> ${formatCurrency(unit.price)}
             </p>
             <p>
               <strong>Area:</strong> {unit.area ?? "—"} sqm
@@ -33,7 +34,7 @@ export function UnitDetailsPage() {
               <strong>Location:</strong> {unit.location ?? "—"}
             </p>
             <p>
-              <strong>Down payment:</strong> {unit.downPayment ?? "—"}
+              <strong>Down payment:</strong> {unit.downPayment != null ? `$${formatCurrency(unit.downPayment)}` : "—"}
             </p>
             <p>
               <strong>Installment years:</strong> {unit.installmentYears ?? "—"}

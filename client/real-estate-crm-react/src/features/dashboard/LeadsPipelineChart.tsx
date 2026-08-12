@@ -34,36 +34,41 @@ export function LeadsPipelineChart({ byStatus }: LeadsPipelineChartProps) {
         Where every lead currently sits, from first contact to close.
       </p>
       {hasAnyData ? (
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--color-border)" />
-            <XAxis
-              dataKey="status"
-              tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
-              axisLine={{ stroke: "var(--color-border)" }}
-              tickLine={false}
-              interval={0}
-              angle={-20}
-              textAnchor="end"
-              height={48}
-            />
-            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--color-text-muted)" }} axisLine={false} tickLine={false} width={28} />
-            <Tooltip
-              cursor={{ fill: "var(--color-primary-soft)" }}
-              contentStyle={{
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--radius-md)",
-                fontSize: 12.5,
-              }}
-            />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
-              {data.map((entry) => (
-                <Cell key={entry.status} fill={entry.color} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        // recharts renders plain SVG with no inherent screen-reader semantics — a visually
+        // hidden text summary gives assistive tech the same information sighted users get from
+        // looking at the bars, instead of the chart being silently skipped over.
+        <div role="img" aria-label={`Leads by status: ${data.map((d) => `${d.status} ${d.count}`).join(", ")}`}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} aria-hidden="true">
+              <CartesianGrid vertical={false} stroke="var(--color-border)" />
+              <XAxis
+                dataKey="status"
+                tick={{ fontSize: 11, fill: "var(--color-text-muted)" }}
+                axisLine={{ stroke: "var(--color-border)" }}
+                tickLine={false}
+                interval={0}
+                angle={-20}
+                textAnchor="end"
+                height={48}
+              />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--color-text-muted)" }} axisLine={false} tickLine={false} width={28} />
+              <Tooltip
+                cursor={{ fill: "var(--color-primary-soft)" }}
+                contentStyle={{
+                  background: "var(--color-surface)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-md)",
+                  fontSize: 12.5,
+                }}
+              />
+              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
+                {data.map((entry) => (
+                  <Cell key={entry.status} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       ) : (
         <p className="state-message">No leads yet.</p>
       )}

@@ -13,7 +13,7 @@ type ActivityItem = {
   at: string;
 };
 
-function timeAgo(iso: string): string {
+export function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diffMs / 60_000);
   if (minutes < 1) return "just now";

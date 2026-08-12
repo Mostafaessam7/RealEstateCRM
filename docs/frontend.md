@@ -318,7 +318,7 @@ Initial KPIs:
 
 
 
-Additional:
+Additional (on the Reports page, not the Dashboard):
 
 
 
@@ -327,6 +327,16 @@ Additional:
 \- Leads by source
 
 \- Agent performance
+
+
+
+The Dashboard itself later gained two more panels beyond the KPI grid: a "Leads Pipeline" bar
+
+chart (leads by status, using the same status→color mapping as `StatusBadge` everywhere else)
+
+and a "Recent Activity" feed merging the newest leads and deals into one chronological list. See
+
+`client/.../src/features/dashboard/LeadsPipelineChart.tsx` and `RecentActivity.tsx`.
 
 
 
