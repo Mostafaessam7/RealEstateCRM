@@ -31,7 +31,13 @@ function CreateCampaignForm({ onCreated }: { onCreated: () => void }) {
     <form onSubmit={handleSubmit}>
       <div className="field">
         <label>Name</label>
-        <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+        <input
+          className="input"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="Spring 2026 WhatsApp blast"
+          required
+        />
       </div>
       <div className="field">
         <label>Channel</label>

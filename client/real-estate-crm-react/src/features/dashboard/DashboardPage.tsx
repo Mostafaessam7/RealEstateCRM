@@ -4,9 +4,13 @@ import { AsyncState } from "../../components/AsyncState";
 import { CardGridSkeleton } from "../../components/Skeleton";
 import { StatCard } from "../../components/StatCard";
 import { useDashboardSummary } from "./dashboardApi";
+import { useLeadsReport } from "../reports/reportsApi";
+import { LeadsPipelineChart } from "./LeadsPipelineChart";
+import { RecentActivity } from "./RecentActivity";
 
 export function DashboardPage() {
   const { data, isLoading, isError } = useDashboardSummary();
+  const leadsReport = useLeadsReport();
 
   return (
     <>
@@ -35,14 +39,17 @@ export function DashboardPage() {
             value={data?.totalSalesValue ?? 0}
             icon={<Wallet size={19} />}
             accent="success"
+            prefix="$"
             format={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           />
           <StatCard index={5} label="Upcoming Follow-ups" value={data?.upcomingFollowUps ?? 0} icon={<CalendarClock size={19} />} accent="warning" />
           <StatCard index={6} label="Available Units" value={data?.totalAvailableUnits ?? 0} icon={<DoorOpen size={19} />} accent="info" />
         </div>
-        <p className="state-message" style={{ marginTop: 18 }}>
-          See the Reports page for leads-by-status/source and agent performance.
-        </p>
+
+        <div className="dashboard-panels">
+          <LeadsPipelineChart byStatus={leadsReport.data?.byStatus ?? {}} />
+          <RecentActivity />
+        </div>
       </AsyncState>
     </>
   );

@@ -96,6 +96,10 @@ export function StatCard({ label, value, icon, accent = "primary", suffix, prefi
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3 }}
+      // A slim top-accent bar (not a border on every edge, not a gradient) so each metric's
+      // category reads at a glance while scanning the row — one small, restrained addition
+      // rather than a heavier redesign of the card itself.
+      style={{ borderTop: `3px solid ${ACCENTS[accent]}` }}
     >
       <div
         style={{
