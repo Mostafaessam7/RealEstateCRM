@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useContractedDeals } from "./commissionsApi";
+import { formatCurrency } from "../../utils/format";
 
 export const commissionSchema = z.object({
   dealId: z.string().min(1, "Deal is required"),
@@ -38,7 +39,7 @@ export function CommissionForm({ onSubmit }: CommissionFormProps) {
           <option value="">Select a deal…</option>
           {deals?.map((deal) => (
             <option key={deal.id} value={deal.id}>
-              {deal.dealValue} — {deal.id.slice(0, 8)}
+              ${formatCurrency(deal.dealValue)} — {deal.id.slice(0, 8)}
             </option>
           ))}
         </select>

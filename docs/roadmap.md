@@ -44,7 +44,15 @@ serializing as a raw integer, and the JWT role claim using the wrong claim type 
 
 role-gated nav was silently hidden — plus several smaller UI/data issues, all fixed and verified
 
-against the running app. The "Later" list is empty.
+against the running app, and a Phase 28 that added dashboard charts/recent-activity/KPI polish,
+
+then reviewed the whole project again and caught a real, systemic unformatted-money-value bug
+
+across 7 more pages (a variant of the Phase 27 bug) plus a completely unstyled Reports-page KPI
+
+row (referencing a CSS class that never existed), fixing both everywhere at once. The "Later"
+
+list is empty.
 
 
 
@@ -2315,6 +2323,146 @@ exercised, because none of them go through real HTTP JSON serialization or a rea
 &#x20; this pass — confirmed clean, 0 errors/warnings). All fixes re-verified live in the running
 
 &#x20; app after each change, not just via automated tests.
+
+
+
+\---
+
+
+
+\# Phase 28 — Dashboard Enhancements & Whole-Project Review
+
+
+
+Two parts: the Dashboard gained the charts/activity-feed/KPI-polish the user asked for, then a
+
+full project + `.md` review swept for anything else missing — which found a real, previously
+
+unnoticed bug affecting money formatting across the app, closed it everywhere at once, and
+
+closed a self-introduced gap (zero tests) from the Dashboard work itself.
+
+
+
+\### Dashboard: pipeline chart, recent activity, KPI polish
+
+
+
+\- \*\*Leads Pipeline chart\*\* (`LeadsPipelineChart.tsx`) — a `recharts` bar chart (the package was
+
+&#x20; a declared dependency for phases but had never actually been used anywhere until now) showing
+
+&#x20; leads by status in pipeline order, colored via the same `statusVariant` mapping `StatusBadge`
+
+&#x20; uses everywhere else. Includes a `role="img"`/`aria-label` text summary so screen readers get
+
+&#x20; the same information sighted users get from the bars, not a silently-skipped SVG.
+
+\- \*\*Recent Activity panel\*\* (`RecentActivity.tsx`) — merges the newest leads and deals (via the
+
+&#x20; existing list endpoints, sorted by `createdAt` — no new backend endpoint) into one
+
+&#x20; chronological feed with relative timestamps ("2h ago") and links to each item's detail page.
+
+\- \*\*KPI cards\*\* — a slim top-accent bar per metric's category, and a `$` prefix on Total Sales
+
+&#x20; Value.
+
+\- Tests: `RecentActivity.test.tsx` (11 — `timeAgo` formatting at every threshold, loading/error/
+
+&#x20; empty states, merge-and-cap-at-6 ordering, link targets) and `LeadsPipelineChart.test.tsx` (3
+
+&#x20; — empty-state logic, not brittle SVG-internals assertions). These didn't exist when the
+
+&#x20; components first shipped — added while reviewing "what's missing" per the user's own request,
+
+&#x20; since shipping new dashboard logic with zero tests broke this project's own established
+
+&#x20; pattern of testing real business logic, not just security-critical paths.
+
+
+
+\### Found while reviewing: a real, systemic money-formatting bug
+
+
+
+\- \*\*`docs/frontend.md`'s Reports page KPI cards used a CSS class (`.kpi-card`) that was never
+
+&#x20; defined anywhere\*\* — a real, visible bug: those 4 cards rendered with zero card styling (no
+
+&#x20; background/padding/radius/shadow), inconsistent with every other card in the app. Fixed by
+
+&#x20; switching them to the same `StatCard` component the Dashboard uses (`ReportsPage.tsx`) —
+
+&#x20; fixes the missing-CSS-class bug and the money-formatting bug in the same change.
+
+\- \*\*7 more places showing raw unformatted numbers\*\* (no thousands separator) for money values —
+
+&#x20; the same defect class caught once already in Phase 27 (Leads/Units/Deals list tables), but
+
+&#x20; missed elsewhere at the time: `CommissionsListPage.tsx` (commission amount, company
+
+&#x20; commission), `CommissionForm.tsx`'s deal picker, `DealForm.tsx`'s unit picker,
+
+&#x20; `UnitDetailsPage.tsx` (price, down payment), `LeadDetailsPage.tsx` (budget range),
+
+&#x20; `ProjectsListPage.tsx` (starting price), and the Reports page's Agent Performance table
+
+&#x20; (commission earned). All now use the shared `utils/format.ts#formatCurrency` from Phase 27.
+
+&#x20; Verified `BillingPage.tsx` and `MarketplacePage.tsx` were already correct (already used
+
+&#x20; `.toLocaleString()`) — not every money value in the app had this bug, only these 7 spots.
+
+
+
+\### `.md` review
+
+
+
+\- `docs/frontend.md`'s Dashboard section updated to describe the new chart/activity panels
+
+&#x20; (previously only described the KPI grid).
+
+\- No other `.md` file needed changes — `docs/roadmap.md` (this entry), `docs/api.md`,
+
+&#x20; `docs/database.md`, `docs/auth.md`, `docs/deployment.md`, `docs/decisions.md`,
+
+&#x20; `docs/architecture.md`, `docs/multi-tenancy.md`, `docs/public-api.md`, both READMEs, and
+
+&#x20; `CLAUDE.md` were all re-checked and remain accurate as of this phase.
+
+
+
+\### Confirmed not newly broken, and not otherwise pursued further this pass
+
+
+
+\- Flutter has no equivalent chart/activity-feed — intentional; mobile stays deliberately
+
+&#x20; simpler/read-only per its own documented scope (`mobile/README.md`), not a gap.
+
+\- Most feature pages (Units, Deals, Billing, Webhooks, API Keys, etc.) still have no dedicated
+
+&#x20; frontend tests beyond the security-critical paths tested in Phases 25–26 — an existing,
+
+&#x20; already-disclosed scope decision, not something newly found.
+
+\- Residual risks already on record and unchanged: no per-account login lockout (Phase 25),
+
+&#x20; JWTs/access-token-in-memory + refresh-cookie architecture is web-only by design (Phase 26),
+
+&#x20; and every device/Docker/cloud-credential validation gap already disclosed in prior phases.
+
+
+
+\- Validated: `dotnet build` (0 errors), `dotnet test` — \*\*180/180 passing\*\* (unaffected, no
+
+&#x20; backend changes this phase), `npm run lint` (clean), `npm test` — \*\*37/37 passing\*\* (24 prior
+
+&#x20; + 13 new), `npm run build` (clean), `flutter analyze`/`flutter test` — unaffected, re-run
+
+&#x20; anyway and confirmed clean (0 errors/warnings, \*\*35/35 passing\*\*).
 
 
 

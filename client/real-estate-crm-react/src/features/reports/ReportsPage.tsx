@@ -1,6 +1,9 @@
+import { TrendingUp, Wallet, HandCoins, Clock } from "lucide-react";
 import { PageHeader } from "../../components/PageHeader";
 import { AsyncState } from "../../components/AsyncState";
+import { StatCard } from "../../components/StatCard";
 import { BreakdownTable } from "./BreakdownTable";
+import { formatCurrency } from "../../utils/format";
 import {
   useAgentPerformanceReport,
   useCommissionReport,
@@ -28,22 +31,41 @@ export function ReportsPage() {
       <PageHeader title="Reports" />
       <AsyncState isLoading={isLoading} isError={isError} errorMessage="Failed to load reports.">
         <div className="kpi-grid">
-          <div className="kpi-card">
-            <div className="value">{conversion.data?.conversionRatePercent ?? 0}%</div>
-            <div className="label">Conversion Rate</div>
-          </div>
-          <div className="kpi-card">
-            <div className="value">{sales.data?.totalSalesValue ?? 0}</div>
-            <div className="label">Total Sales Value</div>
-          </div>
-          <div className="kpi-card">
-            <div className="value">{commissions.data?.totalPaid ?? 0}</div>
-            <div className="label">Commissions Paid</div>
-          </div>
-          <div className="kpi-card">
-            <div className="value">{commissions.data?.totalPending ?? 0}</div>
-            <div className="label">Commissions Pending</div>
-          </div>
+          <StatCard
+            index={0}
+            label="Conversion Rate"
+            value={conversion.data?.conversionRatePercent ?? 0}
+            icon={<TrendingUp size={19} />}
+            accent="success"
+            suffix="%"
+          />
+          <StatCard
+            index={1}
+            label="Total Sales Value"
+            value={sales.data?.totalSalesValue ?? 0}
+            icon={<Wallet size={19} />}
+            accent="primary"
+            prefix="$"
+            format={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          />
+          <StatCard
+            index={2}
+            label="Commissions Paid"
+            value={commissions.data?.totalPaid ?? 0}
+            icon={<HandCoins size={19} />}
+            accent="success"
+            prefix="$"
+            format={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          />
+          <StatCard
+            index={3}
+            label="Commissions Pending"
+            value={commissions.data?.totalPending ?? 0}
+            icon={<Clock size={19} />}
+            accent="warning"
+            prefix="$"
+            format={(v) => v.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -72,7 +94,7 @@ export function ReportsPage() {
                       <td>{agent.agentName}</td>
                       <td>{agent.leadsAssigned}</td>
                       <td>{agent.dealsContracted}</td>
-                      <td>{agent.totalCommissionEarned}</td>
+                      <td>{formatCurrency(agent.totalCommissionEarned)}</td>
                     </tr>
                   ))}
                 </tbody>

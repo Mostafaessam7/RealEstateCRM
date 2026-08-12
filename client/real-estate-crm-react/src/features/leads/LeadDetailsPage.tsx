@@ -21,6 +21,7 @@ import {
 import { useLeadWhatsAppMessages, useSendWhatsApp, useWhatsAppTemplates } from "../whatsapp/whatsappApi";
 import { LeadActivityType, type LeadSource, type LeadStatus } from "../../types/lead";
 import { getApiErrorMessage } from "../../api/client";
+import { formatCurrency } from "../../utils/format";
 
 export function LeadDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -134,7 +135,7 @@ export function LeadDetailsPage() {
                 <strong>Email:</strong> {lead.email ?? "—"}
               </p>
               <p>
-                <strong>Budget:</strong> {lead.budgetMin ?? "—"} - {lead.budgetMax ?? "—"}
+                <strong>Budget:</strong> {formatCurrency(lead.budgetMin)} - {formatCurrency(lead.budgetMax)}
               </p>
               <p>
                 <strong>Preferred location:</strong> {lead.preferredLocation ?? "—"}
