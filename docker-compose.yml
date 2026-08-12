@@ -1,0 +1,85 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SQL_SA_PASSWORD:?Set SQL_SA_PASSWORD in your .env file — see .env.example}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  # Local Azure Blob Storage emulator. AccountName/AccountKey below are Azurite's public,
+  # well-known development constants (documented by Microsoft) — not a real secret.
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    command: "azurite-blob --blobHost 0.0.0.0 --blobPort 10000"
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite-data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: src/RealEstateCRM.Api/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      azurite:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=RealEstateCRM;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+      ConnectionStrings__AzureBlobStorage: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
+      Jwt__Key: "${JWT_KEY:?Set JWT_KEY in your .env file — see .env.example}"
+      Jwt__Issuer: "RealEstateCRM"
+      Jwt__Audience: "RealEstateCRM"
+      Cors__AllowedOrigins__0: "http://localhost:5173"
+      Stripe__SecretKey: "${STRIPE_SECRET_KEY:-}"
+      Stripe__WebhookSecret: "${STRIPE_WEBHOOK_SECRET:-}"
+      Stripe__PublishableKey: "${STRIPE_PUBLISHABLE_KEY:-}"
+      App__PublicUrl: "${APP_PUBLIC_URL:-}"
+      Smtp__Host: "${SMTP_HOST:-}"
+      Smtp__Port: "${SMTP_PORT:-587}"
+      Smtp__Username: "${SMTP_USERNAME:-}"
+      Smtp__Password: "${SMTP_PASSWORD:-}"
+      Smtp__EnableSsl: "${SMTP_ENABLE_SSL:-true}"
+      Smtp__FromAddress: "${SMTP_FROM_ADDRESS:-}"
+      Smtp__FromName: "${SMTP_FROM_NAME:-Real Estate CRM}"
+      WhatsApp__PhoneNumberId: "${WHATSAPP_PHONE_NUMBER_ID:-}"
+      WhatsApp__AccessToken: "${WHATSAPP_ACCESS_TOKEN:-}"
+      Hangfire__DashboardUsername: "${HANGFIRE_DASHBOARD_USERNAME:-}"
+      Hangfire__DashboardPassword: "${HANGFIRE_DASHBOARD_PASSWORD:-}"
+    ports:
+      - "5063:8080"
+
+  client:
+    build:
+      context: client/real-estate-crm-react
+      args:
+        VITE_API_BASE_URL: "http://localhost:5063/api"
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
+volumes:
+  sqlserver-data:
+  redis-data:
+  azurite-data:

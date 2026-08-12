@@ -1,0 +1,23 @@
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Node / Vite
+node_modules/
+dist/
+client/**/dist/
+
+# IDE
+.idea/
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db

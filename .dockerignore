@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.vs/
+**/.vscode/
+**/*.user
+docs/
+tests/
+.git/
+.gitignore
+*.md
