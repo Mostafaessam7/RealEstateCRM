@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/RealEstateCRM.Api/RealEstateCRM.Api.csproj" />
+    <Project Path="src/RealEstateCRM.Application/RealEstateCRM.Application.csproj" />
+    <Project Path="src/RealEstateCRM.Domain/RealEstateCRM.Domain.csproj" />
+    <Project Path="src/RealEstateCRM.Infrastructure/RealEstateCRM.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/RealEstateCRM.Tests/RealEstateCRM.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,43 @@
+name: mobile
+description: "Real Estate CRM — Flutter client for field agents."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Networking
+  dio: ^5.7.0
+
+  # Routing + auth-guarded navigation
+  go_router: ^14.6.2
+
+  # Secure token storage (iOS Keychain / Android Keystore)
+  flutter_secure_storage: ^9.2.2
+
+  # tel:/wa.me deep links
+  url_launcher: ^6.3.1
+
+  # Network connectivity detection (offline state)
+  connectivity_plus: ^6.1.1
+
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true

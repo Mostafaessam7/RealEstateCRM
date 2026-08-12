@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+    <!-- Direct override of the Microsoft.AspNetCore.OpenApi 10.0.10 -> Microsoft.OpenApi 2.0.0
+         transitive dependency, which carries a known high-severity DoS advisory
+         (GHSA-v5pm-xwqc-g5wc, stack overflow parsing a circular-reference OpenAPI document).
+         Patched in the 2.x line at 2.7.5+. -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RealEstateCRM.Application\RealEstateCRM.Application.csproj" />
+    <ProjectReference Include="..\RealEstateCRM.Infrastructure\RealEstateCRM.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
