@@ -50,9 +50,13 @@ then reviewed the whole project again and caught a real, systemic unformatted-mo
 
 across 7 more pages (a variant of the Phase 27 bug) plus a completely unstyled Reports-page KPI
 
-row (referencing a CSS class that never existed), fixing both everywhere at once. The "Later"
+row (referencing a CSS class that never existed), fixing both everywhere at once, and a Phase 29
 
-list is empty.
+that found the "Mecodex" brand assets had been dropped into the client folder but never wired
+
+into the app (generic favicon/title, no logo anywhere, "Real Estate CRM" hardcoded as the
+
+user-facing name) and integrated them. The "Later" list is empty.
 
 
 
@@ -60,9 +64,9 @@ list is empty.
 
 
 
-All requested phases complete. Nothing is planned or pending — "Later" is empty. Do not start
+All requested phases complete, including the Phase 29 Mecodex brand integration. Nothing is
 
-new work without an explicit request.
+planned or pending — "Later" is empty. Do not start new work without an explicit request.
 
 
 
@@ -2463,6 +2467,60 @@ closed a self-introduced gap (zero tests) from the Dashboard work itself.
 &#x20; + 13 new), `npm run build` (clean), `flutter analyze`/`flutter test` — unaffected, re-run
 
 &#x20; anyway and confirmed clean (0 errors/warnings, \*\*35/35 passing\*\*).
+
+
+
+\---
+
+
+
+\# Phase 29 — Mecodex Brand Integration
+
+
+
+`client/real-estate-crm-react/Mecodex-Brand-Assets/` (logo/icon/favicon SVGs+PNGs, brand colors)
+
+had been added to the repo but never wired into the running app — a real, user-visible gap
+
+found on review: the browser tab still showed the generic Vite favicon/title, and every
+
+user-facing surface (Sidebar, Login page, public Marketplace hero) hardcoded "Real Estate CRM"
+
+as the product name with no logo image anywhere.
+
+
+
+\- Copied the needed source assets into `public/` (`mecodex-favicon.svg`, `mecodex-icon.svg`,
+
+&#x20; `favicon.ico`, `mecodex-favicon-192.png`, `mecodex-favicon-512.png`) — `Mecodex-Brand-Assets/`
+
+&#x20; itself stays as the untouched source-of-truth folder, not referenced at runtime.
+
+\- `index.html`: favicon/apple-touch-icon now point at the Mecodex assets, `<title>` and meta
+
+&#x20; description changed from "Real Estate CRM" to "Mecodex".
+
+\- `Sidebar.tsx` and `LoginPage.tsx`: the generic `Building` icon brand-mark replaced with the
+
+&#x20; Mecodex icon SVG, label text changed to "Mecodex".
+
+\- `MarketplacePage.tsx`: public hero label changed from "Real Estate CRM Marketplace" to
+
+&#x20; "Mecodex Marketplace" (icon kept — it's a generic building glyph there, not the brand mark).
+
+\- Not changed: the internal project name ("Real Estate CRM SaaS" in `CLAUDE.md`, the .NET
+
+&#x20; solution/namespaces, `package.json` name) — this phase is a user-facing visual rebrand only,
+
+&#x20; not a project rename, which would be a much larger and riskier change nobody asked for.
+
+&#x20; Flutter (`mobile/`) was not touched — it has its own separate app icon/branding surface and
+
+&#x20; wiring it up is a distinct task if wanted later.
+
+
+
+\- Validated: `npm run build` (frontend, clean).
 
 
 

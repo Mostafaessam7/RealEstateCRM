@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { ChevronsLeft, ChevronsRight, Building } from "lucide-react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import { navItems } from "../routes/navConfig";
 import type { Role } from "../types/auth";
 
@@ -19,9 +19,9 @@ export function Sidebar({ roles, open, collapsed, onToggleCollapse }: SidebarPro
     <aside className={`sidebar${open ? " open" : ""}`}>
       <div className="brand">
         <span className="brand-mark">
-          <Building size={17} color="#fff" strokeWidth={2.2} />
+          <img src="/mecodex-icon.svg" alt="" width={20} height={20} />
         </span>
-        {!collapsed && <span>Real Estate CRM</span>}
+        {!collapsed && <span>Mecodex</span>}
       </div>
 
       <nav>
