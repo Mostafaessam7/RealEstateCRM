@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Building, Lock, Mail, ArrowRight, LayoutDashboard, Users, TrendingUp } from "lucide-react";
+import { Lock, Mail, ArrowRight, LayoutDashboard, Users, TrendingUp } from "lucide-react";
 import { useAuth } from "./AuthContext";
 import { getApiErrorMessage } from "../../api/client";
 
@@ -49,9 +49,9 @@ export function LoginPage() {
       <div className="auth-visual">
         <div className="brand">
           <span className="brand-mark">
-            <Building size={19} color="#fff" strokeWidth={2.2} />
+            <img src="/mecodex-icon.svg" alt="" width={22} height={22} />
           </span>
-          <span>Real Estate CRM</span>
+          <span>Mecodex</span>
         </div>
         <div style={{ position: "relative", zIndex: 1, marginTop: "auto" }}>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 28, lineHeight: 1.25, maxWidth: 380 }}>

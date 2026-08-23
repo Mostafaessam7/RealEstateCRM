@@ -37,7 +37,7 @@ export function MarketplacePage() {
         />
         <div style={{ position: "relative", zIndex: 1 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#fff", opacity: 0.85, fontSize: 13, marginBottom: 12 }}>
-            <Building size={16} /> Real Estate CRM Marketplace
+            <Building size={16} /> Mecodex Marketplace
           </div>
           <h1 style={{ color: "#fff", fontFamily: "var(--font-display)", fontSize: 34, margin: "0 0 8px" }}>
             Find your next property
