@@ -6,7 +6,7 @@
          API-driven, so this would have made the whole app non-functional in production. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mobile"
+        android:label="Mecodex"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

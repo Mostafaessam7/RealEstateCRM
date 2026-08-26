@@ -56,7 +56,9 @@ that found the "Mecodex" brand assets had been dropped into the client folder bu
 
 into the app (generic favicon/title, no logo anywhere, "Real Estate CRM" hardcoded as the
 
-user-facing name) and integrated them. The "Later" list is empty.
+user-facing name) and integrated them across both the web client and the Flutter app (app icon/
+
+launcher name on Android, iOS, and Flutter web). The "Later" list is empty.
 
 
 
@@ -2521,6 +2523,76 @@ as the product name with no logo image anywhere.
 
 
 \- Validated: `npm run build` (frontend, clean).
+
+
+
+\### Flutter app icon/branding (follow-up, same phase)
+
+
+
+The Flutter app (`mobile/`) still had 100% default Flutter-scaffold branding — app label
+
+"mobile"/"Mobile", the generated placeholder launcher icon, and the default Flutter-blue
+
+(`#0175C2`) web manifest — closed in the same pass:
+
+
+
+\- Generated a flat "icon on Ink Dark square" app icon (same convention as the web favicon,
+
+&#x20; composited from `Mecodex-Brand-Assets/PNG/Icon/mecodex-icon-1024.png` onto `#0A0F1C`) via a
+
+&#x20; PowerShell/`System.Drawing` script (no Flutter SDK, ImageMagick, or Python available in this
+
+&#x20; sandbox to use `flutter_launcher_icons`) and resized it down, never up, to every required
+
+&#x20; size: Android legacy launcher (`mipmap-mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi`, 48–192px — no adaptive-
+
+&#x20; icon XML exists, so a single flat PNG per density is correct), the full iOS
+
+&#x20; `AppIcon.appiconset` (20–1024px per `Contents.json`, opaque as Apple requires), and the
+
+&#x20; Flutter-web `icons/Icon-192/512.png` + extra-padded `Icon-maskable-192/512.png` + `favicon.png`.
+
+\- Android: `AndroidManifest.xml`'s `android:label` "mobile" → "Mecodex". iOS:
+
+&#x20; `Info.plist`'s `CFBundleDisplayName`/`CFBundleName` "Mobile"/"mobile" → "Mecodex". App itself:
+
+&#x20; `app.dart`'s `MaterialApp.router(title: ...)` "Real Estate CRM" → "Mecodex" (task-switcher
+
+&#x20; label only — did not rename the `RealEstateCrmApp` Dart class, same reasoning as not renaming
+
+&#x20; the .NET solution: internal identifiers aren't a user-facing branding surface).
+
+\- Flutter web (`mobile/web/`, used for the `flutter build web` verification path — see Phase 23):
+
+&#x20; `manifest.json` name/short\_name/description/background\_color/theme\_color and `index.html`'s
+
+&#x20; title/description/apple-mobile-web-app-title/theme-color, all replaced from Flutter's
+
+&#x20; unedited scaffold defaults.
+
+\- Not changed: Flutter's `AppTheme` color tokens (still the app's own restrained palette, not
+
+&#x20; Mecodex teal/blue) — same scope decision as the web client's `--color-primary`, a bigger
+
+&#x20; visual-system change nobody asked for, not a branding-integration gap.
+
+\- Validated: PNG dimensions spot-checked (`ic_launcher.png` 192×192 at xxxhdpi, maskable 512×512
+
+&#x20; renders inside the safe zone), `Info.plist`/`AndroidManifest.xml`/`manifest.json` still
+
+&#x20; well-formed after the edits (tag/key counts, JSON parse). Not validated: `flutter analyze`/
+
+&#x20; `flutter test`/`flutter build` — no Flutter SDK is installed in this sandbox (confirmed by
+
+&#x20; direct check), the same constraint recorded since Phase 18. The edits themselves are narrow
+
+&#x20; (string/resource-file values and PNG assets only, no Dart logic touched), so this is a low-risk
+
+&#x20; gap, but it should be re-run through `flutter analyze`/`flutter test`/`flutter build` on a
+
+&#x20; machine with the SDK before shipping.
 
 
 
