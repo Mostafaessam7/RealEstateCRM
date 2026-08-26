@@ -29,6 +29,10 @@
   --gradient-primary: var(--color-primary);
   --gradient-sidebar: #14152b;
 
+  /* Mecodex logo-mark tile — solid Ink Dark, matching the brand's own favicon convention
+     (icon on a dark square). Scoped to the two brand-mark tiles only, not the app-wide accent. */
+  --color-brand-mark-bg: #0a0f1c;
+
   /* Status */
   --color-success: #17a367;
   --color-success-soft: #e4f8ee;
@@ -486,10 +490,10 @@ textarea.input:focus {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: var(--gradient-primary);
+  background: var(--color-brand-mark-bg);
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 14px rgba(99, 85, 255, 0.45);
+  box-shadow: 0 6px 14px rgba(10, 15, 28, 0.5);
 }
 
 .sidebar nav {
@@ -800,10 +804,10 @@ textarea.input:focus {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--gradient-primary);
+  background: var(--color-brand-mark-bg);
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 20px rgba(99, 85, 255, 0.5);
+  box-shadow: 0 8px 20px rgba(10, 15, 28, 0.55);
 }
 
 .auth-visual h2 {
