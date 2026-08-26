@@ -12,7 +12,7 @@ class RealEstateCrmApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Real Estate CRM',
+      title: 'Mecodex',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
