@@ -2582,17 +2582,31 @@ The Flutter app (`mobile/`) still had 100% default Flutter-scaffold branding —
 
 &#x20; renders inside the safe zone), `Info.plist`/`AndroidManifest.xml`/`manifest.json` still
 
-&#x20; well-formed after the edits (tag/key counts, JSON parse). Not validated: `flutter analyze`/
+&#x20; well-formed after the edits (tag/key counts, JSON parse).
 
-&#x20; `flutter test`/`flutter build` — no Flutter SDK is installed in this sandbox (confirmed by
 
-&#x20; direct check), the same constraint recorded since Phase 18. The edits themselves are narrow
 
-&#x20; (string/resource-file values and PNG assets only, no Dart logic touched), so this is a low-risk
+&#x20; \*\*Follow-up, once the Flutter SDK became available in this sandbox\*\*: `flutter pub get`
 
-&#x20; gap, but it should be re-run through `flutter analyze`/`flutter test`/`flutter build` on a
+&#x20; (clean), `dart format --set-exit-if-changed .` (clean, 41 files), `flutter analyze` (\*\*0\*\*
 
-&#x20; machine with the SDK before shipping.
+&#x20; errors/warnings — same 2 pre-existing info-level style hints as Phase 23, in unrelated files),
+
+&#x20; `flutter test` (\*\*35/35 passing\*\*, unchanged from Phase 23 — the branding edits touched no
+
+&#x20; Dart logic), `flutter build web --release` (\*\*succeeds\*\*; the "Wasm dry run failed" output is
+
+&#x20; an informational warning about `flutter_secure_storage_web`'s use of `dart:html`/`dart:js_util`,
+
+&#x20; a pre-existing dependency limitation unrelated to this change, not a build failure). Verified
+
+&#x20; directly in `build/web/index.html` and `build/web/manifest.json` that the Mecodex
+
+&#x20; name/title/theme-color actually made it into the compiled output, not just the source files.
+
+&#x20; Android APK/iOS builds still not attempted — no Android SDK/Xcode in this environment, same
+
+&#x20; constraint as every prior phase.
 
 
 
