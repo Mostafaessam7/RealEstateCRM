@@ -2610,6 +2610,46 @@ The Flutter app (`mobile/`) still had 100% default Flutter-scaffold branding —
 
 
 
+\### Launch/splash screen (found on review: both platforms flashed plain white on cold start)
+
+
+
+&#x20; Neither platform's native splash screen had been touched since scaffolding — a real,
+
+&#x20; visible gap the app-icon work alone didn't cover: the icon only appears once the Flutter
+
+&#x20; engine draws its first frame, so every cold start briefly showed a plain white screen before
+
+&#x20; the (dark) app UI, jarring against the rest of the now-dark-themed branding.
+
+
+
+\- Android: `drawable/launch\_background.xml` and `drawable-v21/launch\_background.xml`
+
+&#x20; (light/dark — this app has no separate night-mode launch theme, both already pointed at the
+
+&#x20; same drawable) now paint `#0A0F1C` instead of white/`?android:colorBackground`, with
+
+&#x20; `@mipmap/ic\_launcher` centered on top.
+
+\- iOS: `LaunchScreen.storyboard`'s background color changed from white to the same Ink Dark
+
+&#x20; (`0.0392, 0.0588, 0.1098` sRGB = `#0A0F1C`), and the `LaunchImage` asset — previously three
+
+&#x20; literal 1×1 transparent-pixel placeholders (Flutter's scaffold default, effectively invisible)
+
+&#x20; — replaced with a real transparent Mecodex icon glyph at 84/168/252px (@1x/@2x/@3x).
+
+\- Validated: `flutter analyze` (0 errors/warnings, same 2 pre-existing hints), `flutter test`
+
+&#x20; (35/35 passing) re-confirmed unaffected. Actual on-device splash-screen rendering could not
+
+&#x20; be verified — no Android/iOS device or simulator in this sandbox, same constraint as
+
+&#x20; everywhere else in this file.
+
+
+
 \---
 
 
