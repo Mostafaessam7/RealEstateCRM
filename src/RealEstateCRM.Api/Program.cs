@@ -20,6 +20,12 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Runs before any secret is consumed. Jwt:Key ships empty, which does not fail closed - the API
+// starts fine in Production and only hits the problem at the first sign-in. See SecretsValidator.
+RealEstateCRM.Api.Configuration.SecretsValidator.EnsureProductionSecretsAreConfigured(
+    builder.Configuration,
+    builder.Environment);
+
 // Add services to the container.
 
 // Every enum in every DTO was serializing as its raw integer value (System.Text.Json's default)
