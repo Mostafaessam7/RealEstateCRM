@@ -1,59 +1,79 @@
+@import './design-system/tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ============================================================
    Design tokens
+   ============================================================
+
+   These are now ALIASES onto the shared Mecodex tokens rather than independent
+   values. Every component in the app already references --color-bg,
+   --color-primary and friends; re-pointing them here brings all ~30 screens onto
+   the brand palette in one change, instead of a 30-file rewrite that would be
+   large, hard to review, and impossible to verify screen by screen.
+
+   The old --color-* names stay as the compatibility layer. New and reworked UI
+   should use --mx-* (or the Tailwind utilities that map to them) directly, and
+   screens migrate off these aliases as they are touched.
+
+   Note what this fixes immediately: --color-primary was #5b4fe0, a purple with
+   no relationship to the Mecodex identity. It now resolves to the brand accent.
    ============================================================ */
 :root {
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: "Lexend", var(--font-sans);
+  --font-sans: var(--mx-font-body);
+  --font-display: var(--mx-font-heading);
 
   /* Surfaces */
-  --color-bg: #f6f7fb;
-  --color-bg-subtle: #eef0f7;
-  --color-surface: #ffffff;
-  --color-surface-alt: #fafbfe;
-  --color-border: #e6e8f0;
-  --color-border-strong: #d7dae6;
+  --color-bg: var(--mx-surface-base);
+  --color-bg-subtle: var(--mx-surface-sunk);
+  --color-surface: var(--mx-surface);
+  --color-surface-alt: var(--mx-surface-raised);
+  --color-border: var(--mx-border);
+  --color-border-strong: var(--mx-border-strong);
 
   /* Text */
-  --color-text: #171a2b;
-  --color-text-muted: #6b7086;
-  --color-text-faint: #9aa0b4;
+  --color-text: var(--mx-text);
+  --color-text-muted: var(--mx-text-muted);
+  --color-text-faint: var(--mx-text-muted);
 
   /* Brand — one restrained accent color, used deliberately (primary actions, active nav,
      focus rings) rather than as decoration. --gradient-primary/--gradient-sidebar are kept as
      solid-color aliases (not actual gradients) so every existing reference stays a one-token
      change instead of touching each component. */
-  --color-primary: #5b4fe0;
-  --color-primary-hover: #4c40cf;
-  --color-primary-soft: #eeecff;
-  --color-primary-soft-text: #4a3ce0;
+  --color-primary: var(--mx-accent);
+  --color-primary-hover: var(--mx-accent-hover);
+  --color-primary-soft: var(--mx-accent-subtle);
+  --color-primary-soft-text: var(--mx-accent);
   --gradient-primary: var(--color-primary);
   --gradient-sidebar: #14152b;
 
   /* Mecodex logo-mark tile — solid Ink Dark, matching the brand's own favicon convention
      (icon on a dark square). Scoped to the two brand-mark tiles only, not the app-wide accent. */
-  --color-brand-mark-bg: #0a0f1c;
+  --color-brand-mark-bg: var(--mx-brand-ink);
 
   /* Status */
-  --color-success: #17a367;
-  --color-success-soft: #e4f8ee;
-  --color-warning: #d97a06;
-  --color-warning-soft: #fef3e2;
-  --color-danger: #e0334f;
-  --color-danger-soft: #fde9ec;
-  --color-info: #2f6fed;
-  --color-info-soft: #e8f0fe;
-  --color-neutral-soft: #eef0f5;
+  --color-success: var(--mx-success);
+  --color-success-soft: var(--mx-success-subtle);
+  --color-warning: var(--mx-warning);
+  --color-warning-soft: var(--mx-warning-subtle);
+  --color-danger: var(--mx-danger);
+  --color-danger-soft: var(--mx-danger-subtle);
+  --color-info: var(--mx-info);
+  --color-info-soft: var(--mx-info-subtle);
+  --color-neutral-soft: var(--mx-surface-sunk);
 
   /* Shape / motion */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: var(--mx-radius-sm);
+  --radius-md: var(--mx-radius-md);
+  --radius-lg: var(--mx-radius-lg);
   --radius-pill: 999px;
-  --shadow-xs: 0 1px 2px rgba(23, 26, 43, 0.05);
-  --shadow-sm: 0 2px 8px rgba(23, 26, 43, 0.06);
-  --shadow-md: 0 8px 24px rgba(23, 26, 43, 0.08);
-  --shadow-lg: 0 20px 48px rgba(23, 26, 43, 0.14);
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-xs: var(--mx-shadow-sm);
+  --shadow-sm: var(--mx-shadow-sm);
+  --shadow-md: var(--mx-shadow-md);
+  --shadow-lg: var(--mx-shadow-lg);
+  --ease: var(--mx-ease);
   --sidebar-width: 252px;
   --sidebar-width-collapsed: 76px;
   --navbar-height: 68px;
@@ -141,12 +161,17 @@ h1, h2, h3 {
 .btn-primary {
   background: var(--gradient-primary);
   border-color: transparent;
-  color: #fff;
-  box-shadow: 0 6px 16px rgba(99, 85, 255, 0.28);
+  /* Was hardcoded #fff, which worked against the old purple but drops to 1.66:1
+     against the brand teal in dark mode — measured on the rendered button, not
+     assumed. --mx-text-on-accent is defined per theme precisely to pair with
+     whatever the accent currently is. */
+  color: var(--mx-text-on-accent);
+  box-shadow: var(--mx-shadow-md);
 }
 
 .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 10px 22px rgba(99, 85, 255, 0.36);
+  background: var(--mx-accent-hover);
+  box-shadow: var(--mx-shadow-lg);
 }
 
 .btn-danger {
