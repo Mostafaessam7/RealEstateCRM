@@ -1,4 +1,7 @@
+/* Order matters: tokens.css carries everything theme-independent and no colour;
+   the theme file supplies the palette. RealEstateCRM is assigned Navy Corporate. */
 @import './design-system/tokens.css';
+@import './design-system/themes/navy-corporate.css';
 
 @tailwind base;
 @tailwind components;
