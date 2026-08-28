@@ -52,6 +52,21 @@ jobs:
       - name: dotnet test
         run: dotnet test --configuration Release --no-build
 
+      # Detects the presence of a finding rather than the absence of a reassuring string:
+      # the command prints one line per project, so checking for "has no vulnerable
+      # packages" would be satisfied by any single clean project while another reported
+      # advisories. It also exits 0 either way, so its output is the only usable signal.
+      - name: Check for vulnerable NuGet packages
+        shell: bash
+        run: |
+          report=$(dotnet list package --vulnerable --include-transitive 2>&1)
+          echo "$report"
+          if echo "$report" | grep -q "has the following vulnerable packages"; then
+            echo "::error::Vulnerable NuGet packages found (see the table above)."
+            exit 1
+          fi
+          echo "No vulnerable packages found."
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -70,6 +85,12 @@ jobs:
       - name: npm test (frontend)
         working-directory: client/real-estate-crm-react
         run: npm test
+
+      # High/Critical only: a moderate advisory in build-only tooling should not block
+      # every PR while nobody is triaging lower severities.
+      - name: npm audit (frontend)
+        working-directory: client/real-estate-crm-react
+        run: npm audit --audit-level=high
 
       - name: npm run build (frontend)
         working-directory: client/real-estate-crm-react
