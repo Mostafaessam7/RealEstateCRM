@@ -130,6 +130,11 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// Any orchestrator (App Service, Kubernetes, Container Apps) needs an endpoint to probe before
+// routing traffic to an instance or recycling it.
+builder.Services.AddHealthChecks()
+    .AddCheck<RealEstateCRM.Api.HealthChecks.DatabaseHealthCheck>("database", tags: ["ready"]);
+
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Roles.SuperAdmin, p => p.RequireRole(Roles.SuperAdmin))
     .AddPolicy(Roles.CompanyAdmin, p => p.RequireRole(Roles.CompanyAdmin))
@@ -211,6 +216,15 @@ app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHub<NotificationsHub>("/hubs/notifications");
+
+// /health/live  - is the process up? No dependency checks, so a failure here genuinely does mean
+//                 "restart me".
+// /health/ready - is this instance fit to serve traffic? Adds the database check, so a failure
+//                 means "stop routing to me", not "recycle me".
+// Both unauthenticated by necessity: the orchestrator doing the probing has no bearer token.
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/live", new() { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new() { Predicate = check => check.Tags.Contains("ready") });
 
 // Set Hangfire:DashboardUsername/DashboardPassword before deploying anywhere network-reachable
 // — HangfireDashboardAuthorizationFilter requires HTTP Basic Auth against them, falling back
