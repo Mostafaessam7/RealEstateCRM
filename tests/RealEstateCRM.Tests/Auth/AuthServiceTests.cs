@@ -43,7 +43,17 @@ public class AuthServiceTests
         services.AddHttpContextAccessor();
         services.AddDataProtection();
         services.AddDbContext<ApplicationDbContext>(options => options.UseInMemoryDatabase(dbName, Root));
-        services.AddIdentityCore<ApplicationUser>(options => options.Password.RequiredLength = 8)
+        services.AddIdentityCore<ApplicationUser>(options =>
+            {
+                options.Password.RequiredLength = 8;
+
+                // Mirrors the lockout configuration in Infrastructure's DependencyInjection.
+                // Without it these tests would run on Identity's defaults and the lockout tests
+                // below would be asserting against a different threshold than production uses.
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.AllowedForNewUsers = true;
+            })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
@@ -119,6 +129,87 @@ public class AuthServiceTests
             authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "WrongPassword1!" }, "127.0.0.1"));
 
         Assert.Equal(401, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task LoginAsync_CreatesUsers_WithLockoutEnabled()
+    {
+        // LockoutEnabled is never set explicitly anywhere in this codebase — it comes from
+        // Lockout.AllowedForNewUsers at CreateAsync time. IsLockedOutAsync returns false when it
+        // is off, so if this were false the whole lockout feature would be silently inert.
+        var dbName = Guid.NewGuid().ToString();
+        var (user, _, userManager, _, _) = await CreateActiveUserAsync(dbName);
+
+        Assert.True(await userManager.GetLockoutEnabledAsync(user));
+    }
+
+    [Fact]
+    public async Task LoginAsync_LocksAccount_AfterFiveFailedAttempts()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        var (user, _, userManager, authService, _) = await CreateActiveUserAsync(dbName);
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            await Assert.ThrowsAsync<AppException>(() =>
+                authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "WrongPassword1!" }, "127.0.0.1"));
+        }
+
+        Assert.True(await userManager.IsLockedOutAsync(user));
+
+        // The correct password must now be refused too — otherwise the lockout only slows down an
+        // attacker who keeps guessing wrong, which is not what it is for.
+        var ex = await Assert.ThrowsAsync<AppException>(() =>
+            authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "OriginalPass1!" }, "127.0.0.1"));
+
+        Assert.Equal(401, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task LoginAsync_LockoutMessage_IsIndistinguishableFromWrongPassword()
+    {
+        // Deliberate trade-off: a distinct "account locked" message would help the real user, but
+        // it also confirms the account exists, turning five failed attempts into an enumeration
+        // oracle — the exact property LoginAsync_Throws401_ForUnknownEmail... protects.
+        var dbName = Guid.NewGuid().ToString();
+        var (user, _, _, authService, _) = await CreateActiveUserAsync(dbName);
+
+        var wrongPassword = await Assert.ThrowsAsync<AppException>(() =>
+            authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "WrongPassword1!" }, "127.0.0.1"));
+
+        for (var attempt = 0; attempt < 4; attempt++)
+        {
+            await Assert.ThrowsAsync<AppException>(() =>
+                authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "WrongPassword1!" }, "127.0.0.1"));
+        }
+
+        var lockedOut = await Assert.ThrowsAsync<AppException>(() =>
+            authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "OriginalPass1!" }, "127.0.0.1"));
+
+        Assert.Equal(wrongPassword.Message, lockedOut.Message);
+        Assert.Equal(wrongPassword.StatusCode, lockedOut.StatusCode);
+    }
+
+    [Fact]
+    public async Task LoginAsync_ResetsFailedCount_OnSuccessfulLogin()
+    {
+        // Failures must accumulate toward the threshold but a genuine sign-in has to clear them,
+        // or a user who mistypes twice a week would eventually lock themselves out.
+        var dbName = Guid.NewGuid().ToString();
+        var (user, _, userManager, authService, _) = await CreateActiveUserAsync(dbName);
+
+        for (var attempt = 0; attempt < 4; attempt++)
+        {
+            await Assert.ThrowsAsync<AppException>(() =>
+                authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "WrongPassword1!" }, "127.0.0.1"));
+        }
+
+        Assert.Equal(4, await userManager.GetAccessFailedCountAsync(user));
+
+        await authService.LoginAsync(new LoginRequest { Email = user.Email!, Password = "OriginalPass1!" }, "127.0.0.1");
+
+        Assert.Equal(0, await userManager.GetAccessFailedCountAsync(user));
+        Assert.False(await userManager.IsLockedOutAsync(user));
     }
 
     [Fact]

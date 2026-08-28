@@ -38,9 +38,36 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> LoginAsync(LoginRequest request, string? ipAddress, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user is null || !user.IsActive || !await _userManager.CheckPasswordAsync(user, request.Password))
+
+        if (user is null || !user.IsActive)
         {
             throw new AppException("Invalid email or password.", 401);
+        }
+
+        // A locked-out account is rejected without checking the password at all, so a lockout
+        // can't be waited out by continuing to guess.
+        if (await _userManager.IsLockedOutAsync(user))
+        {
+            throw new AppException("Invalid email or password.", 401);
+        }
+
+        if (!await _userManager.CheckPasswordAsync(user, request.Password))
+        {
+            // CheckPasswordAsync deliberately does none of the lockout bookkeeping that
+            // SignInManager.CheckPasswordSignInAsync does — it only verifies the hash. The
+            // AccessFailedCount/LockoutEnd columns have existed since the first Identity
+            // migration but nothing ever wrote to them, so lockout was configured-looking and
+            // entirely inert. Driving it explicitly here keeps this service free of
+            // SignInManager (which would pull in cookie authentication this JWT API doesn't use).
+            await _userManager.AccessFailedAsync(user);
+            throw new AppException("Invalid email or password.", 401);
+        }
+
+        // Only a successful sign-in clears the counter, so failures accumulate across attempts
+        // rather than resetting on each new one.
+        if (await _userManager.GetAccessFailedCountAsync(user) > 0)
+        {
+            await _userManager.ResetAccessFailedCountAsync(user);
         }
 
         await EnsureCompanyActiveAsync(user, cancellationToken);

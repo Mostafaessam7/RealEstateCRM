@@ -100,7 +100,23 @@ Cookies are a browser-specific mechanism solving a browser-specific problem (a J
 
 ## Rate limiting
 
-`login`/`refresh`/`logout`/`forgot-password`/`reset-password` are rate-limited (10 requests/ minute per IP, the `Auth` policy in `Program.cs`) — these are all `[AllowAnonymous]`, so IP is the only available partition key. This is the primary defense against credential-stuffing/ brute-force login attempts and forgot-password email-bombing; there is no additional per-account lockout (`AuthService.LoginAsync` calls `UserManager.CheckPasswordAsync` directly, not `SignInManager`'s lockout-tracking path) — see `docs/roadmap.md`'s QA-pass phase for why that was a deliberate scope decision, not an oversight.
+`login`/`refresh`/`logout`/`forgot-password`/`reset-password` are rate-limited (10 requests/ minute per IP, the `Auth` policy in `Program.cs`) — these are all `[AllowAnonymous]`, so IP is the only available partition key. This defends against credential stuffing from a single source and forgot-password email-bombing.
+
+## Account lockout
+
+Added 2026-08-28, complementing the per-IP rate limiting above: IP limits do nothing against a distributed attempt spread across many addresses, each staying under the limit while all targeting one account.
+
+Configured in `Infrastructure/DependencyInjection.cs`: 5 failed attempts, 15-minute lockout, `AllowedForNewUsers = true`. That last flag is load-bearing — `LockoutEnabled` is never set explicitly anywhere in this codebase, so it is taken from this option at `CreateAsync` time, and `IsLockedOutAsync` returns `false` whenever it is off.
+
+`AuthService.LoginAsync` drives the bookkeeping itself rather than switching to `SignInManager` (which would pull in cookie authentication this JWT API does not use):
+
+- a locked-out account is rejected **before** the password is checked, so a lockout cannot be waited out by continuing to guess;
+- `AccessFailedAsync` on a wrong password — `CheckPasswordAsync` only verifies the hash and does none of this, which is why the `AccessFailedCount`/`LockoutEnd` columns had existed since the first Identity migration with nothing ever writing to them;
+- `ResetAccessFailedCountAsync` on success, so failures accumulate toward the threshold but a genuine sign-in clears them.
+
+**A lockout returns the same message and status as a wrong password.** A distinct "account locked" response would help the real user, but it also confirms the account exists — turning five failed attempts into an account-enumeration oracle, the exact property the generic unknown-email response exists to protect. Pinned by `LoginAsync_LockoutMessage_IsIndistinguishableFromWrongPassword`.
+
+Covered by four tests in `AuthServiceTests`, verified to fail when the bookkeeping is removed rather than passing alongside it.
 
 ## Initial Endpoints
 

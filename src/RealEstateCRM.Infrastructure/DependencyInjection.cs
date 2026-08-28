@@ -74,6 +74,15 @@ public static class DependencyInjection
             {
                 options.Password.RequiredLength = 8;
                 options.User.RequireUniqueEmail = true;
+
+                // Per-account lockout, complementing the per-IP rate limiting already in place.
+                // Rate limiting alone doesn't stop a distributed attempt spread across many IPs,
+                // each staying under the limit while all targeting one account. AllowedForNewUsers
+                // matters: without it, lockout applies to nobody, since every account is created
+                // with LockoutEnabled defaulting from this setting.
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.Lockout.AllowedForNewUsers = true;
             })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>()

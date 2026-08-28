@@ -912,9 +912,13 @@ A full production-readiness/QA sweep across backend, web, Flutter, CI/CD, and co
 
   vulnerability anywhere in the app (or a compromised dependency) could exfiltrate tokens. Switching to cookie-based auth is a real architecture change (backend `Set-Cookie` support, CSRF tokens, `SameSite`/CORS-credentials reconfiguration) — out of scope for a defect-fixing pass; flagged here rather than silently accepted. Partially mitigated: no `dangerouslySetInnerHTML`/`eval` usage found anywhere in the current codebase.
 
-- **No per-account lockout**, only IP-based rate limiting — `AuthService.LoginAsync` calls
+- ~~**No per-account lockout**, only IP-based rate limiting~~ — **done 2026-08-28.**
 
-  `UserManager.CheckPasswordAsync` directly (not `SignInManager`'s lockout-tracking path). Deliberately not added in this pass: a naive implementation risks becoming an account-enumeration side channel (a locked account would need to respond differently from a wrong-password one), which would undercut the account-enumeration protection just added/tested in `ForgotPasswordAsync`/`LoginAsync`. Would need careful design, not a quick addition.
+  The concern recorded here was the right one: a locked account responding differently from a wrong-password one turns five failed attempts into an account-enumeration oracle, undercutting the protection `ForgotPasswordAsync`/`LoginAsync` already had. The resolution was simply to **not** respond differently — lockout returns the identical message and status as a wrong password, pinned by `LoginAsync_LockoutMessage_IsIndistinguishableFromWrongPassword`. The real user loses a helpful "you're locked out" message; that is the deliberate trade, and it is the same trade the unknown-email branch already makes.
+
+  5 attempts, 15-minute lockout. `AuthService.LoginAsync` drives `AccessFailedAsync`/`ResetAccessFailedCountAsync`/`IsLockedOutAsync` itself rather than adopting `SignInManager` (which would pull in cookie authentication this JWT API doesn't use), and rejects a locked account *before* checking the password so a lockout can't be waited out by continuing to guess.
+
+  Worth noting for anyone auditing the schema: `AccessFailedCount`/`LockoutEnd`/`LockoutEnabled` have existed since the first Identity migration, so the feature looked configured while being entirely inert — nothing ever wrote to those columns. See `docs/auth.md`.
 
 - Real device/simulator, live browser, Docker, cloud infra, and third-party credential validation
 
@@ -1082,7 +1086,7 @@ Two parts: the Dashboard gained the charts/activity-feed/KPI-polish the user ask
 
   frontend tests beyond the security-critical paths tested in Phases 25–26 — an existing, already-disclosed scope decision, not something newly found.
 
-- Residual risks already on record and unchanged: no per-account login lockout (Phase 25),
+- Residual risks already on record and unchanged: ~~no per-account login lockout (Phase 25)~~ (closed 2026-08-28 — see the Phase 25 entry above),
 
   JWTs/access-token-in-memory + refresh-cookie architecture is web-only by design (Phase 26), and every device/Docker/cloud-credential validation gap already disclosed in prior phases.
 
