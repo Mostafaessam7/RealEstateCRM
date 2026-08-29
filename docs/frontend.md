@@ -12,6 +12,32 @@ Use:
 - Zod
 - Axios or equivalent HTTP client
 
+### Styling
+
+- **Tailwind CSS 3.4**, added *alongside* the existing hand-written CSS rather than replacing it.
+  Both are live. A rewrite of working, styled screens was not worth the regression risk, so
+  Tailwind is for new work and incremental change.
+- **The shared design system**, vendored into `client/real-estate-crm-react/design-system/`:
+
+  ```css
+  /* src/index.css — order matters */
+  @import './design-system/tokens.css';                  /* theme-independent; carries NO colour */
+  @import './design-system/themes/navy-corporate.css';   /* this product's colour */
+  @tailwind base; @tailwind components; @tailwind utilities;
+  ```
+
+  `tailwind-preset.js` maps the `--mx-*` tokens onto Tailwind's scale, so a utility class and a
+  hand-written rule resolve to the same value instead of drifting apart.
+
+- **Theme: Navy Corporate.** Every product in the workspace has its own theme over one token
+  architecture, and all themes expose an **identical set of token names** — so a component written
+  against `--mx-surface` is portable across products.
+
+- The design system is **vendored, not linked.** Its source of truth is `MeCodex/design-system`;
+  the theme files there are generated and contrast-verified. Do not hand-edit the copy here — a
+  local edit will be silently overwritten the next time it is re-vendored, and it will no longer
+  match the generator's contrast guarantees.
+
 ## Structure
 
 Suggested:

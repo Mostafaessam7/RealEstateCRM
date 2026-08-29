@@ -4,6 +4,9 @@ A multi-tenant CRM SaaS for real estate companies — leads, projects, units, de
 commissions, users, and reports. Clean Architecture, modular monolith. See
 [`CLAUDE.md`](CLAUDE.md) for the full tech stack and working rules.
 
+**Start at [`PROJECT-STATUS.md`](PROJECT-STATUS.md)** — what is closed, decisions adopted, what is
+still open, known debt, and what was deferred on purpose.
+
 ## Structure
 
 ```text
