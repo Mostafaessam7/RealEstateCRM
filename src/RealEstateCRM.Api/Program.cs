@@ -21,6 +21,25 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Optional Azure Key Vault integration. Set KeyVault__Uri to pull secrets from a vault instead of
+// (or on top of) environment variables. Off by default, so nothing changes for anyone not using
+// Azure. It must stay above SecretsValidator: a value supplied by the vault has to count as
+// configured, otherwise using Key Vault properly would trip the very check that exists to catch
+// unconfigured secrets.
+//
+// DefaultAzureCredential resolves a managed identity in Azure, or `az login` locally.
+//
+// Key Vault secret names cannot contain ':', so they use '--' instead: a secret named "Jwt--Key"
+// maps onto the Jwt:Key configuration entry.
+var keyVaultUri = builder.Configuration["KeyVault:Uri"];
+
+if (!string.IsNullOrWhiteSpace(keyVaultUri))
+{
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUri),
+        new Azure.Identity.DefaultAzureCredential());
+}
+
 // Runs before any secret is consumed. Jwt:Key ships empty, which does not fail closed - the API
 // starts fine in Production and only hits the problem at the first sign-in. See SecretsValidator.
 RealEstateCRM.Api.Configuration.SecretsValidator.EnsureProductionSecretsAreConfigured(
