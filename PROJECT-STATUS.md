@@ -48,7 +48,7 @@ Recent, and previously undocumented outside the commit log:
 |---|---|
 | **Azure** as the primary deployment target | Not wired yet |
 | **Azure Key Vault** for production secrets | Not wired yet. Today: secrets validation that refuses to start outside Development when unconfigured |
-| **Redis** belongs here | One of the three products scoped for it (with PosFlow and Gym Manager). **Not yet added** |
+| **Redis** belongs here | **Already wired** — `AddStackExchangeRedisCache` + `DistributedCacheService` (`Infrastructure/DependencyInjection.cs`), instance prefix `RealEstateCRM:`. It needs a `ConnectionStrings:Redis` value to point at a real server |
 | **App Insights (backend) + Sentry (frontend)** | Not installed yet |
 | **Move DB seeding and Hangfire init out of startup** | **Done (2026-08-29).** Now `--init`, an explicit deployment step. Development still runs it on startup by design. See `docs/deployment.md` |
 | **Navy Corporate theme** | Done |
@@ -61,7 +61,8 @@ Recent, and previously undocumented outside the commit log:
 
 
 
-- **Azure deployment, Key Vault, Redis, Application Insights, Sentry** — none wired.
+- **Azure deployment, Key Vault, Application Insights, Sentry** — none wired.
+- **Redis is wired but unconfigured** — `AddStackExchangeRedisCache` is registered unconditionally, so `ConnectionStrings:Redis` must point at a real server. There is no fallback to in-memory if it is absent.
 - **Hangfire dashboard credentials.** `Hangfire:DashboardUsername` / `DashboardPassword` must be set
   before deploying anywhere network-reachable. The authorization filter falls back if they are
   unset, which is fine locally and not fine in production.
@@ -87,4 +88,3 @@ Recent, and previously undocumented outside the commit log:
 |---|---|
 | **Replacing the hand-written CSS with Tailwind** | The screens work and are styled. A wholesale rewrite is regression risk with no user-visible gain; Tailwind is used for new work instead |
 | **Linking rather than vendoring the design system** | Would need shared-package infrastructure across separate repos. Vendoring is the honest simple option; the drift risk is recorded above instead of hidden |
-| **Redis** | Agreed for this product, but it is a behavioural change needing its own verification |
