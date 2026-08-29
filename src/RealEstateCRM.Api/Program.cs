@@ -13,6 +13,7 @@ using RealEstateCRM.Application.Leads.Validators;
 using RealEstateCRM.Domain.Constants;
 using RealEstateCRM.Infrastructure;
 using RealEstateCRM.Infrastructure.Auth;
+using RealEstateCRM.Api.Configuration;
 using RealEstateCRM.Infrastructure.Identity;
 using RealEstateCRM.Infrastructure.Jobs;
 using RealEstateCRM.Infrastructure.Realtime;
@@ -239,19 +240,30 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     }
 });
 
-using (var scope = app.Services.CreateScope())
+// Deployment tasks (role seeding, recurring job registration) no longer run on every boot.
+// They used to, which meant every instance wrote to the database as it started: on a cold deploy
+// that is N concurrent writers, and because it ran before the app could serve traffic, a collision
+// was a failed start rather than a failed job.
+//
+// Run them as an explicit deployment step:  dotnet RealEstateCRM.Api.dll --init
+// See DeploymentInitializer and docs/deployment.md.
 {
-    await RoleSeeder.SeedRolesAsync(scope.ServiceProvider);
+    var initLogger = app.Services.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("RealEstateCRM.Api.DeploymentInitializer");
+
+    if (DeploymentInitializer.IsRequested(args))
+    {
+        // Init-and-exit: never starts the listener, so an orchestrator can run this as a job.
+        await DeploymentInitializer.RunAsync(app.Services, initLogger);
+        return;
+    }
+
+    if (DeploymentInitializer.ShouldRunOnStartup(app.Environment))
+    {
+        // Development only. One local instance cannot race itself, and requiring a second command
+        // before the app is usable is friction that gets worked around rather than followed.
+        await DeploymentInitializer.RunAsync(app.Services, initLogger);
+    }
 }
-
-RecurringJob.AddOrUpdate<ReminderJobs>(
-    "lead-follow-up-reminders",
-    job => job.SendDueFollowUpRemindersAsync(CancellationToken.None),
-    "*/5 * * * *");
-
-RecurringJob.AddOrUpdate<ReminderJobs>(
-    "task-reminders",
-    job => job.SendDueTaskRemindersAsync(CancellationToken.None),
-    "*/5 * * * *");
 
 app.Run();

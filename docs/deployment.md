@@ -46,6 +46,38 @@ BlobStorage__ContainerName             = media
 
 Never put real secrets directly in App Service settings for production — use Key Vault references (`@Microsoft.KeyVault(...)`) for `ConnectionStrings__DefaultConnection`, `Jwt__Key`, and `ConnectionStrings__AzureBlobStorage`. CI/CD: `.github/workflows/azure-deploy.yml` first runs `test` (`dotnet build`/`dotnet test`, `npm ci`/`lint`/`build`) and `test-mobile` (`flutter pub get`, `dart format --set-exit-if-changed`, `flutter analyze`, `flutter test`) — a failure in either blocks everything downstream. Only then does it build both Docker images, push them to ACR, apply pending EF Core migrations against the target database, and update both Web Apps, on every push to `main`. It needs these GitHub repo secrets/variables — see the workflow file's header comment for the full list.
 
+## Deployment tasks (`--init`)
+
+Role seeding and Hangfire recurring-job registration are an **explicit deployment step**, not
+something that happens when the app boots:
+
+```text
+dotnet RealEstateCRM.Api.dll --init
+```
+
+The process runs the tasks and exits without listening, so it can run as a container job / release
+step. Run it **after** migrations and **before** (or alongside) rolling the app instances.
+
+Both used to run inline at the end of `Program.cs`, on every boot of every instance. Two separate
+problems with that:
+
+- **Seeding writes to the database.** N instances starting together meant N concurrent writers, and
+  because it ran before the app could serve traffic, a collision was a *failed start* rather than a
+  failed job. The seeder itself is now also safe under concurrency — losing the race is treated as
+  success, since the winner produced exactly the row the loser wanted — but data changes should
+  still be a step someone runs deliberately and can see the result of.
+- **Recurring job registration** is idempotent (`AddOrUpdate`), so it was not a race, but it tied
+  job definitions to the lifecycle of the request-serving host. Schedules should change when
+  someone deploys a schedule change.
+
+**In Development it still runs automatically on startup.** One local instance cannot race itself,
+and requiring a second command before the app is usable is friction that gets worked around rather
+than followed. No other environment does this — see `DeploymentInitializer.ShouldRunOnStartup`,
+which is covered by tests asserting Production, Staging and Testing all return false.
+
+> If a deployment forgets this step, the symptom is roles missing and reminder jobs not running.
+> Neither fails loudly at start, which is the trade for not writing to the database on boot.
+
 ## Hangfire dashboard authentication
 
 `/hangfire` is guarded by `HangfireDashboardAuthorizationFilter` (`src/RealEstateCRM.Infrastructure/Auth/HangfireDashboardAuthorizationFilter.cs`): set `Hangfire:DashboardUsername`/`Hangfire:DashboardPassword` (`HANGFIRE_DASHBOARD_USERNAME`/ `HANGFIRE_DASHBOARD_PASSWORD` in `.env`) before deploying anywhere network-reachable — the dashboard then requires HTTP Basic Auth against them. Left unset, it falls back to local-requests-only (the safe default for local dev, same behavior Hangfire's built-in `LocalRequestsOnlyAuthorizationFilter` had before).

@@ -25,6 +25,20 @@ Recent, and previously undocumented outside the commit log:
   hand-written CSS rather than replacing it. Both are live: a rewrite of working, styled screens was
   not worth the regression risk.
 - **Navy Corporate theme** — this product's identity over the shared token architecture.
+- **Deployment tasks moved out of startup (2026-08-29).** Role seeding and Hangfire recurring-job
+  registration used to run inline at the end of `Program.cs`, on every boot of every instance.
+  They are now an explicit step — `dotnet RealEstateCRM.Api.dll --init` — which runs the tasks and
+  exits without listening. Development still runs them on startup, because one local instance
+  cannot race itself and an extra required command is friction that gets worked around.
+  - **The seeder is now safe under concurrency independently of where it runs from.** It was
+    check-then-act: every instance observed "role missing", every instance inserted, and whichever
+    committed second violated the unique index — surfacing as a *failed start*, not a failed job.
+    It now converges instead: losing the race is success, because the winner produced exactly the
+    row the loser wanted. A create that fails for any other reason still throws.
+  - Covered by 11 tests. The two that matter were confirmed to fail against the old
+    implementation before being kept — including one that **forces** the collision with a barrier,
+    after an earlier version of it passed against the buggy seeder because the fake store never
+    interleaved.
 
 ---
 
@@ -36,7 +50,7 @@ Recent, and previously undocumented outside the commit log:
 | **Azure Key Vault** for production secrets | Not wired yet. Today: secrets validation that refuses to start outside Development when unconfigured |
 | **Redis** belongs here | One of the three products scoped for it (with PosFlow and Gym Manager). **Not yet added** |
 | **App Insights (backend) + Sentry (frontend)** | Not installed yet |
-| **Move DB seeding and Hangfire init out of startup** | **Not done — see below.** This is the one adopted decision with code still contradicting it |
+| **Move DB seeding and Hangfire init out of startup** | **Done (2026-08-29).** Now `--init`, an explicit deployment step. Development still runs it on startup by design. See `docs/deployment.md` |
 | **Navy Corporate theme** | Done |
 | **Tailwind alongside existing CSS, not replacing it** | Done. Deliberate: incremental adoption over a risky rewrite |
 | **Design system is vendored, not linked** | The copy in `client/real-estate-crm-react/design-system/` is a vendored snapshot. Source of truth is `MeCodex/design-system`; do not hand-edit the copy |
@@ -45,27 +59,7 @@ Recent, and previously undocumented outside the commit log:
 
 ## 3. Still open
 
-### The startup work (adopted decision, not yet implemented)
 
-`src/RealEstateCRM.Api/Program.cs` still does two things at application start:
-
-```csharp
-using (var scope = app.Services.CreateScope())
-    await RoleSeeder.SeedRolesAsync(scope.ServiceProvider);   // line ~242
-
-RecurringJob.AddOrUpdate<ReminderJobs>("lead-follow-up-reminders", …);  // line ~247
-RecurringJob.AddOrUpdate<ReminderJobs>("task-reminders", …);           // line ~253
-```
-
-Why this matters: both run on **every boot of every instance**. Seeding on startup races when more
-than one instance starts together, and job registration on startup means the app cannot be scaled
-or restarted without re-registering schedules. The agreed end state is that seeding becomes an
-explicit deployment step and job registration moves out of the request-serving host.
-
-Not done in this cleanup pass on purpose — it is a behavioural change needing its own tests, not a
-documentation fix.
-
-### Everything else open
 
 - **Azure deployment, Key Vault, Redis, Application Insights, Sentry** — none wired.
 - **Hangfire dashboard credentials.** `Hangfire:DashboardUsername` / `DashboardPassword` must be set
@@ -91,7 +85,6 @@ documentation fix.
 
 | Item | Why |
 |---|---|
-| **Moving seeding / Hangfire init out of startup** | Adopted and still open. It changes runtime behaviour and needs its own tests; doing it inside a documentation-and-cleanup pass is how a "safe cleanup" breaks a boot path |
 | **Replacing the hand-written CSS with Tailwind** | The screens work and are styled. A wholesale rewrite is regression risk with no user-visible gain; Tailwind is used for new work instead |
 | **Linking rather than vendoring the design system** | Would need shared-package infrastructure across separate repos. Vendoring is the honest simple option; the drift risk is recorded above instead of hidden |
 | **Redis** | Agreed for this product, but it is a behavioural change needing its own verification |
