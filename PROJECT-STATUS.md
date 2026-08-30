@@ -47,9 +47,9 @@ Recent, and previously undocumented outside the commit log:
 | Decision | Status here |
 |---|---|
 | **Azure** as the primary deployment target | Not wired yet |
-| **Azure Key Vault** for production secrets | Not wired yet. Today: secrets validation that refuses to start outside Development when unconfigured |
+| **Azure Key Vault** for production secrets | **Wired (2026-08-30).** Set `KeyVault__Uri`; off without it. Registered above `SecretsValidator` so vault-supplied values count as configured |
 | **Redis** belongs here | **Already wired** — `AddStackExchangeRedisCache` + `DistributedCacheService` (`Infrastructure/DependencyInjection.cs`), instance prefix `RealEstateCRM:`. It needs a `ConnectionStrings:Redis` value to point at a real server |
-| **App Insights (backend) + Sentry (frontend)** | Not installed yet |
+| **App Insights (backend) + Sentry (frontend)** | **Both wired (2026-08-30).** App Insights on `APPLICATIONINSIGHTS_CONNECTION_STRING`, Sentry on `VITE_SENTRY_DSN`. Each registers only when its value is present. Sentry is dynamically imported — the main chunk moved 448.87 → 448.89 kB, so it costs nothing unconfigured |
 | **Move DB seeding and Hangfire init out of startup** | **Done (2026-08-29).** Now `--init`, an explicit deployment step. Development still runs it on startup by design. See `docs/deployment.md` |
 | **Navy Corporate theme** | Done |
 | **Tailwind alongside existing CSS, not replacing it** | Done. Deliberate: incremental adoption over a risky rewrite |
@@ -61,8 +61,22 @@ Recent, and previously undocumented outside the commit log:
 
 
 
-- **Azure deployment, Key Vault, Application Insights, Sentry** — none wired.
-- **Redis is wired but unconfigured** — `AddStackExchangeRedisCache` is registered unconditionally, so `ConnectionStrings:Redis` must point at a real server. There is no fallback to in-memory if it is absent.
+Key Vault, Application Insights and Sentry are all **wired but inert** — each activates only when
+its configuration value is present, so nothing happens until you supply one. What is left is
+supplying them, not writing code:
+
+| Needs | Value to set |
+|---|---|
+| Azure Key Vault | `KeyVault__Uri` |
+| Application Insights | `APPLICATIONINSIGHTS_CONNECTION_STRING` |
+| Sentry | `VITE_SENTRY_DSN` |
+| Redis | `ConnectionStrings:Redis` |
+
+- **Azure deployment** — `azure-deploy.yml` exists but has never run against a real subscription.
+- **Redis is wired but unconfigured**, and note the difference from the other three:
+  `AddStackExchangeRedisCache` is registered **unconditionally**, so `ConnectionStrings:Redis` must
+  point at a running server. There is no in-memory fallback here, unlike PosFlow and Gym Manager
+  where the same decision was implemented with one.
 - **Hangfire dashboard credentials.** `Hangfire:DashboardUsername` / `DashboardPassword` must be set
   before deploying anywhere network-reachable. The authorization filter falls back if they are
   unset, which is fine locally and not fine in production.
