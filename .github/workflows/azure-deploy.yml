@@ -170,6 +170,24 @@ jobs:
         working-directory: mobile
         run: flutter test
 
+  # Reads the secrets context in a step, which is allowed, and exposes the answer as an output,
+  # which a job-level `if` can use. This exists purely because `secrets` cannot be referenced
+  # from `jobs.<id>.if`.
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      has-sql-connection: ${{ steps.check.outputs.has-sql-connection }}
+    steps:
+      - id: check
+        env:
+          SQL_CONNECTION: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+        run: |
+          if [ -n "$SQL_CONNECTION" ]; then
+            echo "has-sql-connection=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-sql-connection=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push:
     needs: [test, test-mobile]
     # Push-only: a pull request runs the two test jobs and stops there. It must never build or
@@ -208,10 +226,14 @@ jobs:
             ${{ secrets.ACR_LOGIN_SERVER }}/realestatecrm-client:latest
 
   migrate:
-    needs: build-and-push
+    needs: [build-and-push, config]
     runs-on: ubuntu-latest
     # Only runs when the connection string secret is configured — see the header comment.
-    if: ${{ github.event_name == 'push' && secrets.AZURE_SQL_CONNECTION_STRING != '' }}
+    #
+    # The check goes through config.outputs rather than reading `secrets` here: the secrets context
+    # is not available in a job-level `if`, and using it made the whole workflow unparseable. Every
+    # run failed before a single job started, which is why this file produced no checks at all.
+    if: ${{ github.event_name == 'push' && needs.config.outputs.has-sql-connection == 'true' }}
     steps:
       - uses: actions/checkout@v4
 
