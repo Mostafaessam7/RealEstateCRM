@@ -30,6 +30,12 @@ name: Build and deploy to Azure
 on:
   push:
     branches: [main]
+  # The test jobs must also run on pull requests, otherwise there is no check to require before
+  # merging and branch protection has nothing to gate on. The deploy-side jobs below are guarded
+  # with github.event_name == 'push' so a PR runs the tests and stops there -- it never builds an
+  # image, touches the database, or deploys.
+  pull_request:
+    branches: [main]
   workflow_dispatch: {}
 
 env:
@@ -166,6 +172,9 @@ jobs:
 
   build-and-push:
     needs: [test, test-mobile]
+    # Push-only: a pull request runs the two test jobs and stops there. It must never build or
+    # publish an image, and a fork PR would not have registry credentials anyway.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -202,7 +211,7 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     # Only runs when the connection string secret is configured — see the header comment.
-    if: ${{ secrets.AZURE_SQL_CONNECTION_STRING != '' }}
+    if: ${{ github.event_name == 'push' && secrets.AZURE_SQL_CONNECTION_STRING != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -227,7 +236,7 @@ jobs:
     runs-on: ubuntu-latest
     # `needs: migrate` normally waits for it, but migrate is conditionally skipped when the
     # connection string secret isn't set — without this, "skipped" would block deploy entirely.
-    if: ${{ !cancelled() && needs.build-and-push.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped') }}
+    if: ${{ github.event_name == 'push' && !cancelled() && needs.build-and-push.result == 'success' && (needs.migrate.result == 'success' || needs.migrate.result == 'skipped') }}
     steps:
       - name: Log in to Azure
         uses: azure/login@v2
