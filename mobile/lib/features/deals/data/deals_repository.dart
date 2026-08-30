@@ -19,7 +19,7 @@ class DealsRepository {
         queryParameters: {
           'page': page,
           'pageSize': pageSize,
-          if (status != null) 'status': status,
+          'status': ?status,
         },
       ),
     );

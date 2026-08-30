@@ -76,7 +76,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          # Vite 8 / Vitest 4 need a newer Node than 20. On 20 the run failed with
+          # "[vitest-pool]: Failed to start forks worker" for every test file, which reads like a
+          # broken test setup rather than a version problem.
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: client/real-estate-crm-react/package-lock.json
 

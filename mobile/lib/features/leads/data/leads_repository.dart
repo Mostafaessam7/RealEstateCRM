@@ -22,7 +22,7 @@ class LeadsRepository {
           'page': page,
           'pageSize': pageSize,
           if (search != null && search.isNotEmpty) 'search': search,
-          if (status != null) 'status': status,
+          'status': ?status,
         },
       ),
     );
