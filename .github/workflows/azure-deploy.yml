@@ -180,10 +180,13 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       has-sql-connection: ${{ steps.check.outputs.has-sql-connection }}
+      has-registry-credentials: ${{ steps.check.outputs.has-registry-credentials }}
     steps:
       - id: check
         env:
           SQL_CONNECTION: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          REGISTRY_USERNAME: ${{ secrets.ACR_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
         run: |
           if [ -n "$SQL_CONNECTION" ]; then
             echo "has-sql-connection=true" >> "$GITHUB_OUTPUT"
@@ -191,11 +194,23 @@ jobs:
             echo "has-sql-connection=false" >> "$GITHUB_OUTPUT"
           fi
 
+          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then
+            echo "has-registry-credentials=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-registry-credentials=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push:
-    needs: [test, test-mobile]
+    needs: [test, test-mobile, config]
     # Push-only: a pull request runs the two test jobs and stops there. It must never build or
     # publish an image, and a fork PR would not have registry credentials anyway.
-    if: github.event_name == 'push'
+    #
+    # Also skipped when no registry credentials are configured. Without this the job fails with
+    # "Username and password required" from docker/login-action on every push, which makes the
+    # whole workflow red for a repository that has simply not been pointed at Azure yet -- and a
+    # permanently red workflow is one nobody reads. The deploy chain below is already gated the
+    # same way.
+    if: ${{ github.event_name == 'push' && needs.config.outputs.has-registry-credentials == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
