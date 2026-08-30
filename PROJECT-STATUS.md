@@ -89,8 +89,14 @@ supplying them, not writing code:
   cost of incremental adoption, but it does mean two places to look when a style is wrong. The
   Tailwind preset maps `--mx-*` tokens onto Tailwind's scale so the two at least resolve to the
   same values.
-- **The vendored design system can drift.** Nothing checks that the copy here still matches
-  `MeCodex/design-system`. A local edit, or an upstream regeneration, would go unnoticed.
+- ~~**The vendored design system can drift.**~~ ✅ **Closed 2026-08-30.** CI now clones MeCodex
+  (it is public) and diffs the three vendored files. A hand-edit here, or an upstream
+  regeneration that was never re-vendored, fails the build in either direction.
+  - The comparison uses `diff --strip-trailing-cr`, and that is load-bearing rather than
+    defensive: MeCodex commits these files with CRLF while the copy here is committed with LF.
+    They are otherwise byte-identical — 5215 vs 5078 bytes on `tokens.css`, exactly the 137 CR
+    characters. Without the flag the check would have failed on **every run** and been muted,
+    which is worse than not having it. Caught by running the check before shipping it.
 - **Frontend bundle is large** — the main chunk is ~449 kB (135 kB gzipped) and the dashboard
   another ~363 kB. It builds fine; it is simply not small.
 

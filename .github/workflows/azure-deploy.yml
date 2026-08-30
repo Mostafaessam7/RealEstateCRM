@@ -92,6 +92,48 @@ jobs:
         working-directory: client/real-estate-crm-react
         run: npm audit --audit-level=high
 
+      # The design system under client/real-estate-crm-react/design-system/ is a vendored copy.
+      # Its source of truth is the MeCodex repo, where the theme files are generated and their
+      # contrast is solved for rather than checked afterwards. A hand-edit here looks entirely
+      # reasonable in review and silently drops this app out of those guarantees, so nothing would
+      # fail -- the colours would just quietly stop being AA-compliant.
+      #
+      # MeCodex is public, so this can clone it and diff. Pinned to a tag-less shallow clone of
+      # main on purpose: the intent is "does our copy match what MeCodex ships today", and pinning
+      # to a commit would just move the staleness somewhere harder to notice.
+      #
+      # If this fails, one of two things happened: the copy here was edited (re-vendor it), or
+      # MeCodex regenerated its themes (re-vendor it, then check nothing visual regressed).
+      - name: Check the vendored design system matches MeCodex
+        run: |
+          git clone --depth 1 https://github.com/Mostafaessam7/MeCodex.git "$RUNNER_TEMP/mecodex"
+
+          vendored="client/real-estate-crm-react/design-system"
+          source="$RUNNER_TEMP/mecodex/design-system"
+
+          # Only the files actually vendored here are compared. MeCodex also ships an Angular
+          # adapter and the generator scripts, which this app has no reason to carry.
+          #
+          # --strip-trailing-cr is load-bearing, not defensive: MeCodex commits these files with
+          # CRLF and the copy here is committed with LF. The content is byte-identical otherwise
+          # (5215 vs 5078 bytes on tokens.css -- exactly the 137 CR characters). Without this flag
+          # the check fails on every single run and gets muted, which is worse than not having it.
+          failed=0
+          for f in tokens.css tailwind-preset.js themes/navy-corporate.css; do
+            if ! diff --strip-trailing-cr -q "$source/$f" "$vendored/$f" > /dev/null 2>&1; then
+              echo "::error file=$vendored/$f::Drifted from MeCodex/design-system/$f"
+              diff --strip-trailing-cr "$source/$f" "$vendored/$f" || true
+              failed=1
+            fi
+          done
+
+          if [ "$failed" -ne 0 ]; then
+            echo "The vendored design system no longer matches its source. Re-vendor the files above."
+            exit 1
+          fi
+
+          echo "Vendored design system matches MeCodex."
+
       - name: npm run build (frontend)
         working-directory: client/real-estate-crm-react
         run: npm run build
