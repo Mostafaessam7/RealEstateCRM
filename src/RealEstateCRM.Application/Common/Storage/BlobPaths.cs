@@ -19,9 +19,29 @@ public static class BlobPaths
     public static string Document(Guid companyId, Guid documentId, string fileName) =>
         $"companies/{companyId}/documents/{documentId}/{Sanitize(fileName)}";
 
+    /// <summary>
+    /// Characters replaced in an uploaded file name before it becomes part of a blob path.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately an explicit set rather than <see cref="Path.GetInvalidFileNameChars"/>, which
+    /// is <b>platform-dependent</b>: on Windows it includes <c>:</c>, <c>?</c>, <c>*</c> and the
+    /// rest, while on Linux it returns only <c>/</c> and NUL. Using it meant the same upload was
+    /// sanitised differently depending on the host the API happened to run on — fine on a
+    /// developer's Windows machine, and not sanitised at all on a Linux container in production.
+    ///
+    /// This is the set Windows rejects, applied everywhere, because the file name can travel: a
+    /// blob uploaded from Linux may later be downloaded by a Windows client that cannot save
+    /// "weird:name?.pdf" at all. Sanitising to the stricter platform is the portable choice.
+    /// </remarks>
+    private static readonly char[] InvalidFileNameChars =
+        ['"', '<', '>', '|', '\0', ':', '*', '?', '\\', '/'];
+
     private static string Sanitize(string fileName)
     {
-        var invalid = Path.GetInvalidFileNameChars();
-        return new string(fileName.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
+        var sanitized = fileName
+            .Select(c => InvalidFileNameChars.Contains(c) || char.IsControl(c) ? '_' : c)
+            .ToArray();
+
+        return new string(sanitized);
     }
 }
