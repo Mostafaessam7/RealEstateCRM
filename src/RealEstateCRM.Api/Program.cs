@@ -40,6 +40,26 @@ if (!string.IsNullOrWhiteSpace(keyVaultUri))
         new Azure.Identity.DefaultAzureCredential());
 }
 
+// Application Insights, registered only when a connection string is present. Set
+// APPLICATIONINSIGHTS_CONNECTION_STRING (or ApplicationInsights:ConnectionString) to enable it.
+//
+// Gated rather than called unconditionally: AddApplicationInsightsTelemetry() with no connection
+// string still installs the whole telemetry pipeline - modules, processors, a background channel -
+// which then buffers and drops everything it collects. Pure overhead in every local run and every
+// test, for output nobody reads.
+//
+// Placed below the Key Vault registration on purpose, so a connection string kept in the vault is
+// visible here.
+var appInsightsConnectionString =
+    builder.Configuration["ApplicationInsights:ConnectionString"]
+    ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+
+if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
+{
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+        options.ConnectionString = appInsightsConnectionString);
+}
+
 // Runs before any secret is consumed. Jwt:Key ships empty, which does not fail closed - the API
 // starts fine in Production and only hits the problem at the first sign-in. See SecretsValidator.
 RealEstateCRM.Api.Configuration.SecretsValidator.EnsureProductionSecretsAreConfigured(
