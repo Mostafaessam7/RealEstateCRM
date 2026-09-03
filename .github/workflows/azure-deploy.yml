@@ -107,15 +107,31 @@ jobs:
       # reasonable in review and silently drops this app out of those guarantees, so nothing would
       # fail -- the colours would just quietly stop being AA-compliant.
       #
-      # MeCodex is public, so this can clone it and diff. Pinned to a tag-less shallow clone of
-      # main on purpose: the intent is "does our copy match what MeCodex ships today", and pinning
-      # to a commit would just move the staleness somewhere harder to notice.
+      # Compares the vendored copy against what MeCodex ships today. A shallow clone of main
+      # rather than a pinned commit: pinning would just move the staleness somewhere harder to see.
       #
-      # If this fails, one of two things happened: the copy here was edited (re-vendor it), or
-      # MeCodex regenerated its themes (re-vendor it, then check nothing visual regressed).
+      # If this reports drift, one of two things happened: the copy here was edited (re-vendor it),
+      # or MeCodex regenerated its themes (re-vendor, then check nothing visual regressed).
+      #
+      # The clone needs read access to MeCodex. GITHUB_TOKEN is scoped to this repository only, so
+      # it cannot help: while MeCodex was public no credential was needed, and once it went private
+      # every run failed with "could not read Username for github.com" and exit 128 -- on every
+      # pull request, including eleven that had nothing to do with the design system.
+      #
+      # An unreachable source is not drift. Failing here would assert the copies differ when they
+      # were never compared, so this warns and skips instead. The warning is deliberately loud: a
+      # skipped check that says nothing is how a gate quietly stops being a gate.
+      #
+      # To restore it: make MeCodex public again, or add a PAT with read access to it as a repo
+      # secret and clone with that token in the URL, e.g.
+      #   git clone --depth 1 https://x-access-token:$MECODEX_READ_TOKEN@github.com/Mostafaessam7/MeCodex.git
+      # passing the secret in via env: rather than interpolating it into the script.
       - name: Check the vendored design system matches MeCodex
         run: |
-          git clone --depth 1 https://github.com/Mostafaessam7/MeCodex.git "$RUNNER_TEMP/mecodex"
+          if ! git clone --depth 1 https://github.com/Mostafaessam7/MeCodex.git "$RUNNER_TEMP/mecodex" 2>/dev/null; then
+            echo "::warning::Could not read MeCodex, so the vendored design system was NOT checked for drift. It is private and this job has no credential for it. Make it public or add a read token -- see the comment above this step."
+            exit 0
+          fi
 
           vendored="client/real-estate-crm-react/design-system"
           source="$RUNNER_TEMP/mecodex/design-system"
