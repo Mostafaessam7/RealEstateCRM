@@ -239,7 +239,7 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Build and push API image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: src/RealEstateCRM.Api/Dockerfile
@@ -249,7 +249,7 @@ jobs:
             ${{ secrets.ACR_LOGIN_SERVER }}/realestatecrm-api:latest
 
       - name: Build and push frontend image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: client/real-estate-crm-react
           push: true
