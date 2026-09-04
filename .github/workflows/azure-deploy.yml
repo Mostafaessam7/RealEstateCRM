@@ -137,14 +137,14 @@ jobs:
           source="$RUNNER_TEMP/mecodex/design-system"
 
           # Only the files actually vendored here are compared. MeCodex also ships an Angular
-          # adapter and the generator scripts, which this app has no reason to carry.
+          # adapter, the generator scripts and a Tailwind preset, none of which this app carries.
           #
           # --strip-trailing-cr is load-bearing, not defensive: MeCodex commits these files with
           # CRLF and the copy here is committed with LF. The content is byte-identical otherwise
           # (5215 vs 5078 bytes on tokens.css -- exactly the 137 CR characters). Without this flag
           # the check fails on every single run and gets muted, which is worse than not having it.
           failed=0
-          for f in tokens.css tailwind-preset.js themes/navy-corporate.css; do
+          for f in tokens.css themes/navy-corporate.css; do
             if ! diff --strip-trailing-cr -q "$source/$f" "$vendored/$f" > /dev/null 2>&1; then
               echo "::error file=$vendored/$f::Drifted from MeCodex/design-system/$f"
               diff --strip-trailing-cr "$source/$f" "$vendored/$f" || true
