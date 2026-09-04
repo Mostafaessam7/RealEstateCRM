@@ -74,7 +74,7 @@ jobs:
           echo "No vulnerable packages found."
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           # Vite 8 / Vitest 4 need a newer Node than 20. On 20 the run failed with
           # "[vitest-pool]: Failed to start forks worker" for every test file, which reads like a
