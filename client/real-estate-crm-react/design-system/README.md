@@ -4,6 +4,12 @@ The shared visual layer for every Mecodex product. This directory is the **sourc
 
 It was extracted from the marketing site's existing system in `website/css/style.css`, then generalised into five per-product themes.
 
+> **Vendored copy — read this first.** This is MeCodex's own README, copied verbatim alongside
+> `design-system/`. Only `tokens.css` and `themes/navy-corporate.css` are vendored into this app,
+> and CI checks exactly those two for drift against MeCodex. The Tailwind preset, Angular adapter
+> and generator scripts described below exist upstream only: this client styles itself with
+> hand-written CSS against the token custom properties, not Tailwind.
+
 ---
 
 ## What's here
