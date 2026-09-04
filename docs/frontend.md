@@ -14,20 +14,26 @@ Use:
 
 ### Styling
 
-- **Tailwind CSS 3.4**, added *alongside* the existing hand-written CSS rather than replacing it.
-  Both are live. A rewrite of working, styled screens was not worth the regression risk, so
-  Tailwind is for new work and incremental change.
+- **Hand-written CSS against the design-system tokens.** There is no CSS framework. Components
+  style themselves with ordinary classes and custom properties.
+
+  Tailwind was previously listed here as being live "alongside" this CSS. It never was. It was
+  installed and configured, but the client has no `postcss.config.*` and no Tailwind plugin in
+  `vite.config.ts`, so nothing ever processed it: the `@tailwind` directives were copied verbatim
+  into the shipped stylesheet as invalid at-rules and not one utility class was generated. No
+  component used a Tailwind class either. It was removed in full on 2026-09-04; the built CSS
+  shrank by exactly the 56 bytes of those three directives and was otherwise byte-identical, which
+  is the proof it had no effect.
+
 - **The shared design system**, vendored into `client/real-estate-crm-react/design-system/`:
 
   ```css
   /* src/index.css — order matters */
-  @import './design-system/tokens.css';                  /* theme-independent; carries NO colour */
-  @import './design-system/themes/navy-corporate.css';   /* this product's colour */
-  @tailwind base; @tailwind components; @tailwind utilities;
+  @import '../design-system/tokens.css';                  /* theme-independent; carries NO colour */
+  @import '../design-system/themes/navy-corporate.css';   /* this product's colour */
   ```
 
-  `tailwind-preset.js` maps the `--mx-*` tokens onto Tailwind's scale, so a utility class and a
-  hand-written rule resolve to the same value instead of drifting apart.
+  Note the `../`: `design-system/` sits at the client root, not under `src/`.
 
 - **Theme: Navy Corporate.** Every product in the workspace has its own theme over one token
   architecture, and all themes expose an **identical set of token names** — so a component written
