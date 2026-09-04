@@ -24,7 +24,7 @@
     "react-router-dom": "^7.18.2",
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
