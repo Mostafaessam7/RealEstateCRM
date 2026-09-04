@@ -4,11 +4,10 @@ The shared visual layer for every Mecodex product. This directory is the **sourc
 
 It was extracted from the marketing site's existing system in `website/css/style.css`, then generalised into five per-product themes.
 
-> **Vendored copy — read this first.** This is MeCodex's own README, copied verbatim alongside
-> `design-system/`. Only `tokens.css` and `themes/navy-corporate.css` are vendored into this app,
-> and CI checks exactly those two for drift against MeCodex. The Tailwind preset, Angular adapter
-> and generator scripts described below exist upstream only: this client styles itself with
-> hand-written CSS against the token custom properties, not Tailwind.
+> **Vendored copy — read this first.** This is MeCodex's own README, copied verbatim alongside the
+> design system. Only `tokens.css` and `themes/navy-corporate.css` are vendored into this app, and
+> CI checks exactly those two for drift against MeCodex. Everything else described below — the
+> adapters and the generator scripts — lives upstream only.
 
 ---
 
@@ -18,8 +17,8 @@ It was extracted from the marketing site's existing system in `website/css/style
 | --- | --- |
 | `tokens.css` | Theme-**independent** layer: type scale, spacing, radius, elevation, motion, baseline. No colour. |
 | `themes/*.css` | One file per colour identity. Only surfaces, text, borders and brand colours. |
-| `tailwind-preset.js` | React adapter. Maps tokens to Tailwind keys **and** to the names shadcn/ui generates against. |
-| `angular-material-theme.scss` | Angular adapter. Drives Material's appearance from the tokens, not Material defaults. |
+| `tailwind-preset.js` | React adapter for Tailwind + shadcn/ui. **Not in use** — no product has Tailwind; never built or verified. See [Consuming it](#consuming-it). |
+| `angular-material-theme.scss` | Angular adapter for Material. **Not in use** — no product has `@angular/material`; never built or verified. See [Consuming it](#consuming-it). |
 | `build-themes.mjs` | Derives every palette and verifies contrast. The source of truth for values. |
 | `emit-theme-files.mjs` | Writes `themes/*.css` and asserts token-name parity across them. |
 
@@ -33,7 +32,18 @@ Products share one architecture and one set of token **names**; only the values 
 | `enterprise-blue` | PosFlow |
 | `amber-commerce` | POS, E-Commerce |
 | `slate-pro` | Gym Manager |
-| `modern-teal` | Subscription Tracker, MeCodex |
+| `modern-teal` | Subscription Tracker |
+
+### The marketing site is the source, not a consumer
+
+`website/` deliberately does **not** import these files, even though `modern-teal` is nominally its theme. The relationship runs the other way: `modern-teal` was derived *from* the marketing site's palette, so applying the derived approximation back onto the original would be circular.
+
+It would also break things. Two concrete reasons, both measured rather than assumed:
+
+- The site hardcodes the brand teal **63 times** in SVG `stroke` attributes in the markup. Token aliasing cannot reach a presentation attribute, so the CSS accent would move to `#14a387` while 63 icon strokes stayed `#33E0C7` — a visible desync across every page of a live public site.
+- The site's ground is `#0A0F1C` (blue-ink); the generated theme's is `#111b1f` (teal-ink). Close, but not the same, and the site is dark-only with no light mode to fall back on.
+
+If the site should genuinely consume the system later, the work is: convert those 63 strokes to `currentColor` driven by CSS, add an explicit `data-theme="dark"` stamp (the shared tokens default to light, so without it the site flips), then alias. That is a deliberate piece of work on a live site, not a side effect of a token migration.
 
 Always import both, in this order:
 
@@ -110,45 +120,88 @@ Two findings worth keeping:
 
 ## Consuming it
 
-These are separate repositories with no shared registry, and `Mecodex-Brand-Assets` is already vendored into six of them. This follows that established pattern: **copy `design-system/` into the product**, alongside the brand assets, and re-copy when it changes here.
+These are separate repositories with no shared registry, and `Mecodex-Brand-Assets` is already vendored into six of them. This follows that established pattern: **copy the parts you need into the product**, alongside the brand assets, and re-copy when they change here.
 
-### React — Tailwind + shadcn/ui
+In practice all six products vendor the same two things and nothing else — `tokens.css` and the one `themes/*.css` for their identity. The adapters and the generator scripts stay here; a product has no reason to carry a generator it never runs. RealEstateCRM's CI diffs its vendored copies against this directory on every run, so drift there fails the build.
 
-```js
-// tailwind.config.js
-import mecodex from './design-system/tailwind-preset.js';
+### React — tokens only
 
-export default {
-  presets: [mecodex],
-  content: ['./src/**/*.{ts,tsx}'],
-};
-```
+Both React products (POS BackOffice, RealEstateCRM) load the theme CSS directly and style
+themselves with hand-written CSS against the custom properties:
 
 ```ts
-// main.tsx — before Tailwind's layers
+// main.tsx
 import './design-system/tokens.css';
+import './design-system/themes/<product-theme>.css';
 ```
 
-The preset maps both Mecodex role names (`bg-surface`, `text-ink-muted`, `text-accent`) **and** the semantic names shadcn generates against (`background`, `foreground`, `primary`, `border`, `ring`, `destructive`). A generated `<Button>` or `<Card>` is therefore on-brand with no per-component editing — which is what makes shadcn viable here instead of a second design language living alongside this one.
+There is no CSS framework in any product in this workspace.
 
-### Angular — Material/CDK + tokens
+#### `tailwind-preset.js` is **not in use**
 
-```scss
-// styles.scss
-@use './design-system/angular-material-theme' as mecodex;
+The file is here, and it is written, but nothing consumes it:
+
+- neither React app has `tailwindcss` installed;
+- RealEstateCRM did carry it for a while and it **never once worked** — see below.
+
+It exists because the workspace decision originally read "React → Tailwind + shadcn/ui". That half
+of the decision was never implemented anywhere, and the one attempt failed silently for weeks.
+
+**The failure is worth recording, because a `tailwind.config.js` on its own looks like a working
+setup.** RealEstateCRM had this preset vendored, a config referencing it, and
+`@tailwind base/components/utilities` in `index.css`. What it did not have was a
+`postcss.config.*` or the Tailwind Vite plugin — and without one of those, **Vite never runs
+Tailwind at all**. It does not warn. The three directives were copied verbatim into the shipped
+stylesheet as invalid at-rules and no utility class was ever generated, while the project's own
+documentation recorded Tailwind as adopted and "live alongside" the hand-written CSS.
+
+It was removed on 2026-09-04. The built CSS shrank by exactly 56 bytes — precisely the length of
+`@tailwind base;@tailwind components;@tailwind utilities;` — and was otherwise byte-identical,
+which is the proof it had never contributed anything.
+
+If Tailwind is ever adopted, **wire the build first and verify a utility actually renders before
+writing any component against it**, then verify this preset: it maps both Mecodex role names
+(`bg-surface`, `text-ink-muted`, `text-accent`) and the semantic names shadcn/ui generates against
+(`background`, `foreground`, `primary`, `border`, `ring`, `destructive`), but like the Angular
+Material adapter below it has never been built or verified anywhere. Treat it as a draft.
+### Angular — CDK + tokens
+
+Both Angular products (Subscription Tracker, PosFlow) load the theme CSS directly and use
+**`@angular/cdk` only**:
+
+```css
+/* styles.css */
 @import './design-system/tokens.css';
+@import './design-system/themes/<product-theme>.css';
 ```
 
-Material is used **for behaviour**: CDK overlay positioning, focus trapping, live announcers and keyboard interaction are hard to write correctly by hand and were flagged as missing in the accessibility audit.
+The CDK is used **for behaviour**, not appearance: focus trapping, overlay positioning, live
+announcers, keyboard interaction. Those are hard to write correctly by hand, and the accessibility
+work proved it — the dialogs in both products carried the right-looking markup while focus escaped
+to the page behind them and Escape did nothing. The CDK primitives fixed that with **no visual
+change at all**, which is exactly why they were worth adding.
 
-Its *appearance* is driven from the tokens. That happens in two places, and both matter:
+#### `angular-material-theme.scss` is **not in use**
 
-1. The palettes and typography config — covers what Material themes through its palette API.
-2. The `--mdc-*` / `--mat-*` overrides at the bottom of the file — covers Material's own runtime tokens for surfaces, outlines and corner radii.
+The file is here, and it is written, but nothing consumes it:
 
-Without the second part, components Material doesn't theme through the palette silently revert to Material defaults and sit slightly "off" against everything else, in a way that is hard to attribute.
+- neither app has `@angular/material` **or** `sass` installed, so it cannot compile today;
+- it has therefore **never been built or verified** anywhere — treat it as a draft, not a
+  working adapter.
 
-Material also defaults to fully-rounded pill buttons. The Mecodex system has an explicit **anti-"rounded-everything"** position, so corners are pulled back to the shared radius scale.
+It exists because the workspace decision named "Angular Material/CDK". The CDK half was adopted;
+the component library was not. Replacing hand-written components that already work, are already
+bound to these tokens, and are already covered by tests is a large change to working UI whose only
+clear benefit — the accessibility primitives — was obtainable from the CDK alone.
+
+If Material is ever adopted, **verify this file before trusting it**: it needs `sass` and
+`@angular/material`, and its two halves both matter. The palettes and typography config cover what
+Material themes through its palette API; the `--mdc-*` / `--mat-*` overrides at the bottom cover
+Material's own runtime tokens for surfaces, outlines and corner radii. Without the second half,
+components Material does not theme through the palette silently revert to Material defaults and sit
+slightly "off" in a way that is hard to attribute. It also pulls corners back from Material's
+fully-rounded pill default to the shared radius scale, per this system's explicit
+anti-"rounded-everything" position.
 
 ### Razor / vanilla — tokens only
 
