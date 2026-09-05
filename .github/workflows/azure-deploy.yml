@@ -218,6 +218,36 @@ jobs:
   # Reads the secrets context in a step, which is allowed, and exposes the answer as an output,
   # which a job-level `if` can use. This exists purely because `secrets` cannot be referenced
   # from `jobs.<id>.if`.
+  # infra/main.bicep has never been deployed -- no subscription has been available. Compiling it
+  # is therefore the only verification that exists, which makes it worth doing on every push
+  # rather than never. `az bicep build` resolves every resource type and API version against the
+  # ARM schemas, so a typo'd property or a retired apiVersion fails here instead of halfway
+  # through someone's first real deployment.
+  #
+  # This deliberately does NOT run what-if or any command that touches a subscription: it needs no
+  # credentials and cannot be blocked by their absence.
+  infra:
+    name: Infrastructure template compiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compile the Bicep template
+        run: az bicep build --file infra/main.bicep --outfile /dev/null
+
+      - name: Fail on Bicep warnings
+        run: |
+          # az bicep build exits 0 on warnings. Warnings here are things like a deprecated
+          # apiVersion or an unused parameter -- worth failing on while the file is small enough
+          # to keep clean, rather than accumulating a backlog nobody reads.
+          output=$(az bicep build --file infra/main.bicep --stdout 2>&1 >/dev/null)
+          if [ -n "$output" ]; then
+            echo "$output"
+            echo "::error::Bicep reported warnings. Fix them or justify them in a comment."
+            exit 1
+          fi
+          echo "Bicep compiled with no warnings."
+
   config:
     runs-on: ubuntu-latest
     outputs:
