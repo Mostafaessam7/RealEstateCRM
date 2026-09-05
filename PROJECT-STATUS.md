@@ -174,3 +174,36 @@ workflow:
 **Security updates are unaffected** — Dependabot ignores that limit for security advisories, so a
 dependency with a known vulnerability still opens a PR. Set the limits back to a non-zero number to
 bring routine updates back.
+
+---
+
+## Update 2026-09-05 — infrastructure as Bicep, compiled in CI
+
+The environment this app deploys into existed only as assumptions inside `azure-deploy.yml`: it
+pushes two images to a registry, migrates a SQL database, deploys to two named App Services, and
+the app reads Redis, Key Vault and Application Insights at startup. None of it was written down,
+and none of it exists yet.
+
+`infra/main.bicep` writes it down. Every resource in it is something the workflow or the
+application already requires — it is not a guess at what might be useful.
+
+**I had previously declined to write this**, on the grounds that untested infrastructure repeats
+the mistake of a CD workflow that was written and never run. That objection was right, so this
+addresses it instead of ignoring it: a new `infra` CI job runs `az bicep build` on every push and
+fails on warnings as well as errors. Compilation resolves every resource type, API version and
+property name against the ARM schemas, so a typo or retired `apiVersion` fails in CI rather than
+halfway through someone's first deployment. The job needs no credentials, so it cannot be blocked
+by their absence. It compiles clean today.
+
+**What that does not prove**, stated at the top of the template and in `infra/README.md`: it has
+never been deployed. Compiling is not deploying. SKU availability, quota, and whether the app
+actually starts against these resources are all unverified. Expect the first
+`az deployment group create` to surface problems.
+
+Shortcuts are recorded rather than hidden — SQL open to all Azure services so the runner can
+migrate, registry admin credentials because that is what the workflow authenticates with, Basic/B1
+SKUs so a first deployment cannot quietly cost money, no custom domain. Each is a decision someone
+would otherwise have to reverse engineer from the portal.
+
+The template's outputs are exactly the repository variables and secrets the deploy jobs are
+currently gated on, so wiring it up does not require rediscovering the mapping.
