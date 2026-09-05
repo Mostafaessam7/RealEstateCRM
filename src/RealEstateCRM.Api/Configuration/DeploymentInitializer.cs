@@ -47,16 +47,32 @@ public static class DeploymentInitializer
     public static bool ShouldRunOnStartup(IHostEnvironment environment) =>
         environment.IsDevelopment();
 
-    public static async Task RunAsync(IServiceProvider services, ILogger logger, CancellationToken cancellationToken = default)
+    public static async Task RunAsync(
+        IServiceProvider services,
+        ILogger logger,
+        IConfiguration configuration,
+        IHostEnvironment environment,
+        CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Running deployment tasks.");
 
         using (var scope = services.CreateScope())
         {
             await RoleSeeder.SeedRolesAsync(scope.ServiceProvider, cancellationToken);
+
+            logger.LogInformation("Roles seeded.");
+
+            // Roles alone left the system with zero users and no way to make one: there is no
+            // self-registration, and POST /api/users requires an admin. Without this a fresh
+            // deployment cannot be signed into at all.
+            await AdminSeeder.SeedAdminAsync(
+                scope.ServiceProvider,
+                configuration,
+                environment.IsDevelopment(),
+                cancellationToken);
         }
 
-        logger.LogInformation("Roles seeded.");
+        logger.LogInformation("Initial admin ensured.");
 
         RegisterRecurringJobs();
 

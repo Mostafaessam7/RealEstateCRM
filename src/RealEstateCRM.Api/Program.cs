@@ -293,7 +293,7 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     if (DeploymentInitializer.IsRequested(args))
     {
         // Init-and-exit: never starts the listener, so an orchestrator can run this as a job.
-        await DeploymentInitializer.RunAsync(app.Services, initLogger);
+        await DeploymentInitializer.RunAsync(app.Services, initLogger, app.Configuration, app.Environment);
         return;
     }
 
@@ -301,7 +301,7 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
         // Development only. One local instance cannot race itself, and requiring a second command
         // before the app is usable is friction that gets worked around rather than followed.
-        await DeploymentInitializer.RunAsync(app.Services, initLogger);
+        await DeploymentInitializer.RunAsync(app.Services, initLogger, app.Configuration, app.Environment);
     }
 }
 
