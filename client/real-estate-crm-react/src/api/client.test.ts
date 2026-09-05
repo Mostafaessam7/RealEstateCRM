@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
-import { apiClient, getApiErrorMessage, refreshSessionFromCookie, SESSION_EXPIRED_EVENT } from "./client";
+import { apiClient, getApiErrorMessage, NETWORK_ERROR_MESSAGE, refreshSessionFromCookie, SESSION_EXPIRED_EVENT } from "./client";
 import { authSession } from "../utils/authSession";
 
 describe("getApiErrorMessage", () => {
@@ -24,6 +24,25 @@ describe("getApiErrorMessage", () => {
 
   it("falls back to the default generic message for a non-Axios error", () => {
     expect(getApiErrorMessage(new Error("boom"))).toBe("Something went wrong.");
+  });
+
+  it("reports a transport failure as a transport failure, not as the caller's fallback", () => {
+    // An AxiosError with no `response` is what connection-refused, timeout and a CORS block all
+    // look like. The login page's fallback is "Invalid email or password.", so without this the
+    // user is told their credentials are wrong whenever the API is simply not reachable — which
+    // is what happened when the API was running on a port its CORS policy did not allow.
+    const networkError = new AxiosError("Network Error", AxiosError.ERR_NETWORK);
+
+    expect(getApiErrorMessage(networkError, "Invalid email or password.")).toBe(NETWORK_ERROR_MESSAGE);
+  });
+
+  it("still prefers a real server message over the transport one when a response exists", () => {
+    const error = new AxiosError("Request failed", "401", undefined, undefined, {
+      status: 401,
+      data: { title: "Invalid email or password." },
+    } as AxiosResponse);
+
+    expect(getApiErrorMessage(error, "unused")).toBe("Invalid email or password.");
   });
 });
 

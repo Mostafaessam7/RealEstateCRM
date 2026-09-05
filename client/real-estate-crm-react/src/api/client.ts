@@ -87,11 +87,29 @@ apiClient.interceptors.response.use(
   },
 );
 
+/**
+ * Message shown when the request never got a response at all.
+ *
+ * Kept separate from the caller's fallback on purpose. Callers pass fallbacks that describe a
+ * server *answer* — the login page passes "Invalid email or password." — so routing a transport
+ * failure through them tells the user their password is wrong when the truth is that the API is
+ * down, the wrong port is configured, or the browser blocked the reply for CORS. That is exactly
+ * how a stopped backend gets diagnosed as a credentials problem.
+ */
+export const NETWORK_ERROR_MESSAGE =
+  "Could not reach the server. Check that the API is running and reachable, then try again.";
+
 export function getApiErrorMessage(error: unknown, fallback = "Something went wrong."): string {
   if (axios.isAxiosError(error)) {
     const title = (error.response?.data as { title?: string } | undefined)?.title;
     if (title) {
       return title;
+    }
+
+    // No response object means nothing came back: connection refused, DNS failure, timeout, or a
+    // CORS block. Distinguishing this is the whole point of the constant above.
+    if (!error.response) {
+      return NETWORK_ERROR_MESSAGE;
     }
   }
   return fallback;
