@@ -187,6 +187,18 @@ jobs:
 
       - name: npm run build (frontend)
         working-directory: client/real-estate-crm-react
+        # This build is a compile check -- its output is thrown away, and the image that actually
+        # ships is built separately by build-and-push, which passes the real address from the
+        # API_BASE_URL repository variable.
+        #
+        # The value still has to be present, because vite.config.ts refuses to make a production
+        # build without it. That guard exists for a good reason (a bundle with no API address
+        # fails at runtime with an error that never mentions the missing variable) and it caught
+        # this step on the commit that introduced it. A placeholder is the honest thing here: the
+        # step is asserting that the TypeScript compiles and the bundle builds, not that any
+        # particular URL is correct.
+        env:
+          VITE_API_BASE_URL: https://compile-check.invalid/api
         run: npm run build
 
   test-mobile:
