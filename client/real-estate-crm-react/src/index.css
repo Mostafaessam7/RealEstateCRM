@@ -493,7 +493,17 @@ textarea.input:focus {
   display: flex;
   flex-direction: column;
   padding: 18px 14px;
-  position: relative;
+  /* The shell scrolls the document, not an inner pane, so a statically-placed sidebar slides off
+     the top with it: on any page taller than the viewport the brand and the first nav items ended
+     up above the fold and you had to scroll back up to change page. The navbar already solves this
+     with sticky; the sidebar was simply never given the same treatment. Pinning it to the viewport
+     needs its own height and its own scrollbar, otherwise a short screen would clip the lower nav
+     items with no way to reach them. Below 960px the media query makes this a fixed drawer, which
+     overrides all of it. */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar .brand {
@@ -678,6 +688,12 @@ textarea.input:focus {
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  /* A <button> does not inherit the page text colour -- the UA stylesheet gives it
+     `color: buttontext`, which is black. The chip's name span sets no colour of its own, so it
+     rendered pure black on the navy bar: 1.33:1, effectively invisible. The role line underneath
+     only escaped because it names a colour explicitly. Set it here so anything inside the chip
+     inherits the theme instead of the UA default. */
+  color: var(--color-text);
   cursor: pointer;
   transition: box-shadow 0.15s var(--ease);
 }
